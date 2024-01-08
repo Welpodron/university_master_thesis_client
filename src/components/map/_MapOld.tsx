@@ -1,5 +1,5 @@
 import { Box, Code, Text } from '@mantine/core';
-import { LatLngExpression } from 'leaflet';
+import { UseFormReturnType } from '@mantine/form';
 import { useState } from 'react';
 import {
   MapContainer,
@@ -8,16 +8,20 @@ import {
   Popup,
   useMapEvents,
 } from 'react-leaflet';
+import { FormValuesType } from '../../App';
 
-const ClickMarker = () => {
-  const [position, setPosition] = useState<LatLngExpression | null>(null);
-  // const position = form.values.shipments[shipmentIndex].location;
+export type ClickMarkerPropsType = {
+  form: UseFormReturnType<FormValuesType>;
+  shipmentIndex: number;
+};
+
+const ClickMarker = ({ form, shipmentIndex }: ClickMarkerPropsType) => {
+  const position = form.values.shipments[shipmentIndex].location;
 
   const map = useMapEvents({
     click(event) {
       const { lat, lng } = event.latlng;
-      // form.setFieldValue(`shipments.${shipmentIndex}.location`, [lat, lng]);
-      setPosition([lat, lng]);
+      form.setFieldValue(`shipments.${shipmentIndex}.location`, [lat, lng]);
     },
   });
 
@@ -29,8 +33,7 @@ const ClickMarker = () => {
             event.preventDefault();
             event.stopPropagation();
             event.nativeEvent.stopImmediatePropagation();
-            setPosition(null);
-            // form.setFieldValue(`shipments.${shipmentIndex}.location`, null);
+            form.setFieldValue(`shipments.${shipmentIndex}.location`, null);
           }}
         >
           Удалить ❌
@@ -40,21 +43,20 @@ const ClickMarker = () => {
   );
 };
 
-export const Map = () => {
+export type MapPropsType = {
+  form: UseFormReturnType<FormValuesType>;
+  shipmentIndex: number;
+};
+
+export const Map = ({ form, shipmentIndex }: MapPropsType) => {
   return (
-    <Box
-      h={300}
-      style={{
-        borderRadius: '5px',
-        overflow: 'hidden',
-      }}
-    >
+    <Box h={300}>
       <MapContainer center={[55.74, 37.62]} zoom={10}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <ClickMarker />
+        <ClickMarker {...{ form, shipmentIndex }} />
       </MapContainer>
     </Box>
   );
