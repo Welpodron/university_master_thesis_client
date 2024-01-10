@@ -9,6 +9,10 @@ const sort = <T extends Record<string, any>>({
   sortBy: string;
   sortDirection: 'desc' | 'asc';
 }) => {
+  if (!data.length) {
+    return data;
+  }
+
   //! Shallow copy no need to go deep
   const _data = [...data] as T[];
 
@@ -43,15 +47,15 @@ const sort = <T extends Record<string, any>>({
 };
 
 export type useSortPropsType<T extends Record<string, any>> = {
-  initialSortBy: string;
+  initialSortBy?: string;
   initialSortDirection?: 'desc' | 'asc';
   initialData: T[];
 };
 
 export const useSort = <T extends Record<string, any>>({
   initialData,
-  initialSortBy,
-  initialSortDirection = 'asc',
+  initialSortBy = 'id',
+  initialSortDirection = 'desc',
 }: useSortPropsType<T>) => {
   const [sortBy, setSortBy] = useState(initialSortBy);
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>(
