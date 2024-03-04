@@ -17,9 +17,45 @@ import { ModalsProvider } from '@mantine/modals';
 import { TimeInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { Calculator } from './components/calculator/Calculator';
+import { useEffect, useRef } from 'react';
 
 export default function App() {
   const [opened, { open, close }] = useDisclosure(false);
+
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    let events: EventSource | undefined;
+
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+
+    (() => {
+      events = new EventSource('http://localhost:3000/_debug');
+
+      console.log(events);
+
+      events.onopen = (event: Event) => {
+        console.log('Opened', event);
+      };
+
+      events.onmessage = (event: MessageEvent) => {
+        console.log(JSON.parse(event.data));
+      };
+
+      events.onerror = (event: Event) => {
+        console.log('Error', event);
+      };
+    })();
+
+    return () => {
+      if (events && events instanceof EventSource) {
+        events.close();
+      }
+    };
+  }, []);
 
   return (
     <MantineProvider>
