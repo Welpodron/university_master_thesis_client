@@ -1,6 +1,7 @@
 import '@mantine/core/styles.css';
 
 import {
+  Button,
   Container,
   MantineProvider,
   Paper,
@@ -9,12 +10,17 @@ import {
   Stack,
   Tabs,
   Text,
+  Modal,
 } from '@mantine/core';
 import { _Table } from './components/table/Table';
 import { ModalsProvider } from '@mantine/modals';
 import { TimeInput } from '@mantine/dates';
+import { useDisclosure } from '@mantine/hooks';
+import { Calculator } from './components/calculator/Calculator';
 
 export default function App() {
+  const [opened, { open, close }] = useDisclosure(false);
+
   return (
     <MantineProvider>
       <ModalsProvider>
@@ -33,6 +39,26 @@ export default function App() {
               <Radio checked label="Расстояние" />
             </Stack>
           </Paper> */}
+          <Button onClick={open}>Рассчитать</Button>
+
+          <Modal
+            opened={opened}
+            onClose={close}
+            styles={{
+              content: {
+                minWidth: '100%',
+                minHeight: '100%',
+              },
+            }}
+            title={
+              <Text fw={500} fz="lg">
+                Результат расчетов
+              </Text>
+            }
+            centered
+          >
+            <Calculator />
+          </Modal>
           <_Table></_Table>
         </Container>
       </ModalsProvider>
