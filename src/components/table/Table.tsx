@@ -18,9 +18,6 @@ import {
   Checkbox,
   Modal,
   SimpleGrid,
-  Slider,
-  RangeSlider,
-  TextInput,
   NumberInput,
   Drawer,
   Loader,
@@ -31,13 +28,6 @@ import {
 import {
   IconArrowNarrowDown,
   IconArrowNarrowUp,
-  IconChevronDown,
-  IconChevronLeft,
-  IconChevronLeftPipe,
-  IconChevronRight,
-  IconChevronRightPipe,
-  IconChevronUp,
-  IconFilter,
   IconMenu2,
   IconPencil,
   IconPlus,
@@ -45,8 +35,7 @@ import {
   IconSettings,
   IconX,
 } from '@tabler/icons-react';
-import { TASKS } from './data';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 
@@ -57,15 +46,19 @@ import { usePaginate } from './usePaginate';
 import { useSort } from './useSort';
 import { LatLngExpression } from 'leaflet';
 
+import API from '../../api/API';
+
+import { notifications } from '@mantine/notifications';
+
+type Task = {
+  id: number;
+  latitude: number;
+  longitude: number;
+  demand: number;
+};
+
 export const _Table = () => {
-  const [cache, setCache] = useState<
-    {
-      id: number;
-      latitude: number;
-      longitude: number;
-      demand: number;
-    }[]
-  >([]);
+  const [cache, setCache] = useState<Task[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -84,39 +77,28 @@ export const _Table = () => {
 
   useEffect(() => {
     const controller = new AbortController();
-    const { signal } = controller;
 
-    const _fetch = async () => {
+    (async () => {
       try {
-        const res = await fetch('http://localhost:3000/tasks', {
-          headers: {
-            'Content-type': 'application/json',
-          },
-          signal,
+        const res = await API.get<Task[]>('/tasks', {
+          signal: controller.signal,
         });
 
-        if (!res.ok) {
-          throw new Error(`[${res.status}] ${res.statusText}`);
-        }
-
-        const data: {
-          id: number;
-          latitude: number;
-          longitude: number;
-          demand: number;
-        }[] = await res.json();
-
-        setCache(data);
+        setCache(res.data);
       } catch (error) {
-        if (!signal?.aborted) {
+        if (!controller.signal?.aborted) {
           console.error(error);
+          notifications.show({
+            title: 'Произошла ошибка',
+            message:
+              'Произошла ошибка при выполнении сетевого запроса, подробности ошибки выведены в консоль разработчика',
+            color: 'red',
+          });
         }
       } finally {
         setIsInitialLoading(false);
       }
-    };
-
-    _fetch();
+    })();
 
     return () => {
       controller.abort();
@@ -143,48 +125,34 @@ export const _Table = () => {
       if (!coordinates || !demand) {
         return;
       }
+
       setIsLoading(true);
       setIsAddFormSubmitting(true);
 
-      const _fetch = async () => {
+      (async () => {
         try {
-          const res = await fetch(`http://localhost:3000/task`, {
-            method: 'POST',
-            body: JSON.stringify({
-              latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-              longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-              demand,
-            }),
-            headers: {
-              'Content-type': 'application/json',
-            },
+          const res = await API.post<Task>('/task', {
+            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
+            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
+            demand,
           });
 
-          if (!res.ok) {
-            throw new Error(`[${res.status}] ${res.statusText}`);
-          }
-
-          const data: {
-            id: number;
-            latitude: number;
-            longitude: number;
-            demand: number;
-          } = await res.json();
-
-          if (data) {
-            setCache((cache) => [...cache, data]);
-          }
-
+          setCache((cache) => [...cache, res.data]);
           closeAddDrawer();
         } catch (error) {
           console.error(error);
+
+          notifications.show({
+            title: 'Произошла ошибка',
+            message:
+              'Произошла ошибка при выполнении сетевого запроса, подробности ошибки выведены в консоль разработчика',
+            color: 'red',
+          });
         } finally {
           setIsLoading(false);
           setIsAddFormSubmitting(false);
         }
-      };
-
-      _fetch();
+      })();
     },
     []
   );
@@ -205,117 +173,71 @@ export const _Table = () => {
       setIsLoading(true);
       setIsEditFormSubmitting(true);
 
-      const _fetch = async () => {
+      (async () => {
         try {
-          const res = await fetch(`http://localhost:3000/task/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-              latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-              longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-              demand,
-            }),
-            headers: {
-              'Content-type': 'application/json',
-            },
+          const res = await API.put<Task>(`/task/${id}`, {
+            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
+            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
+            demand,
           });
 
-          if (!res.ok) {
-            throw new Error(`[${res.status}] ${res.statusText}`);
-          }
-
-          const data: {
-            id: number;
-            latitude: number;
-            longitude: number;
-            demand: number;
-          } = await res.json();
-
-          if (data) {
-            setCache((cache) =>
-              cache.map((row) =>
-                row.id === data.id
-                  ? {
-                      id: data.id,
-                      latitude: data.latitude,
-                      longitude: data.longitude,
-                      demand: data.demand,
-                    }
-                  : row
-              )
-            );
-          }
-
+          setCache((cache) =>
+            cache.map((row) =>
+              row.id === res.data.id
+                ? {
+                    id: res.data.id,
+                    latitude: res.data.latitude,
+                    longitude: res.data.longitude,
+                    demand: res.data.demand,
+                  }
+                : row
+            )
+          );
           closeEditDrawer();
         } catch (error) {
           console.error(error);
+
+          notifications.show({
+            title: 'Произошла ошибка',
+            message:
+              'Произошла ошибка при выполнении сетевого запроса, подробности ошибки выведены в консоль разработчика',
+            color: 'red',
+          });
         } finally {
           setIsLoading(false);
           setIsEditFormSubmitting(false);
         }
-      };
-
-      _fetch();
+      })();
     },
     []
   );
 
-  const handleDeleteSubmit = useCallback(
-    ({ ids }: { ids: number[] | number }) => {
-      if (ids === Infinity) {
-        setIsLoading(true);
+  const handleDeleteSubmit = useCallback(({ ids }: { ids: number[] }) => {
+    if (Array.isArray(ids)) {
+      setIsLoading(true);
 
-        const _fetch = async () => {
-          try {
-            const res = await fetch(`http://localhost:3000/tasks`, {
-              method: 'DELETE',
-              headers: {
-                'Content-type': 'application/json',
-              },
-            });
+      (async () => {
+        try {
+          await API.delete('/task', {
+            data: { ids },
+          });
 
-            if (!res.ok) {
-              throw new Error(`[${res.status}] ${res.statusText}`);
-            }
+          setCache((cache) => cache.filter((row) => !ids.includes(row.id)));
+        } catch (error) {
+          console.error(error);
 
-            setCache([]);
-          } catch (error) {
-            console.error(error);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-
-        _fetch();
-      } else if (Array.isArray(ids)) {
-        setIsLoading(true);
-
-        const _fetch = async () => {
-          try {
-            const res = await fetch(`http://localhost:3000/task`, {
-              method: 'DELETE',
-              body: JSON.stringify({ ids }),
-              headers: {
-                'Content-type': 'application/json',
-              },
-            });
-
-            if (!res.ok) {
-              throw new Error(`[${res.status}] ${res.statusText}`);
-            }
-
-            setCache((cache) => cache.filter((row) => !ids.includes(row.id)));
-          } catch (error) {
-            console.error(error);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-
-        _fetch();
-      }
-    },
-    []
-  );
+          notifications.show({
+            title: 'Произошла ошибка',
+            message:
+              'Произошла ошибка при выполнении сетевого запроса, подробности ошибки выведены в консоль разработчика',
+            color: 'red',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+    }
+  }, []);
 
   const [
     isShownColumnsDrawerOpened,
@@ -344,24 +266,9 @@ export const _Table = () => {
     },
   });
 
-  const filterForm = useForm({});
-
-  // const filterForm = useForm({
-  //   initialValues: Object.fromEntries(
-  //     Object.keys(cache[0]).map((key) => [key, ''])
-  //   ),
-  // });
-
-  //Object.keys(cache[0]).map((key) => [key, ''])
-
   const [isAddFormSubmitting, setIsAddFormSubmitting] = useState(false);
 
   const [isEditFormSubmitting, setIsEditFormSubmitting] = useState(false);
-
-  const [
-    isFiltersFormModalOpened,
-    { open: openFiltersFormModal, close: closeFiltersFormModal },
-  ] = useDisclosure(false);
 
   const { sortedData, sortBy, sortDirection, setSortDirection, setSortBy } =
     useSort({
@@ -396,17 +303,17 @@ export const _Table = () => {
 
   const openConfirmDeleteModal = ({ ids }: { ids: number[] }) =>
     modals.openConfirmModal({
-      title: 'Please confirm your action',
+      title: 'Подтвердите действие',
       centered: true,
       withCloseButton: false,
       children: (
         <Text size="sm">
-          This action is so important that you are required to confirm it with a
-          modal. Please click one of these buttons to proceed.
+          Данная операция не является обратимой при нажатии на кнопку
+          "Подтвердить" вы осознаете последствия данного действия
         </Text>
       ),
       confirmProps: { color: 'red' },
-      labels: { confirm: 'Confirm', cancel: 'Cancel' },
+      labels: { confirm: 'Подтвердить', cancel: 'Отмена' },
       onConfirm: () => {
         handleDeleteSubmit({ ids });
       },
@@ -439,62 +346,6 @@ export const _Table = () => {
             }}
           >
             <Group p={10} gap={10}>
-              {paginatedData.length ? (
-                <>
-                  <ActionIcon onClick={openFiltersFormModal} size="lg">
-                    <IconFilter />
-                  </ActionIcon>
-                  <Drawer
-                    offset={8}
-                    position="left"
-                    radius="md"
-                    opened={isFiltersFormModalOpened}
-                    title={
-                      <Text fw={500} fz="lg">
-                        Фильтр
-                      </Text>
-                    }
-                    onClose={closeFiltersFormModal}
-                  >
-                    <Stack>
-                      {/* <RangeSlider
-                    min={1}
-                    max={20}
-                    labelAlwaysOn
-                    mt="xl"
-                    minRange={1}
-                    defaultValue={[1, 20]}
-                  /> */}
-                      {Object.keys(paginatedData[0]).map((key) => (
-                        <TextInput
-                          name={key}
-                          key={key}
-                          label={key}
-                          {...filterForm.getInputProps(key)}
-                        />
-                      ))}
-                      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                        <Button>Применить</Button>
-                        <Button
-                          variant="default"
-                          onClick={() => {
-                            filterForm.reset();
-                            // filterForm.setValues(
-                            //   Object.fromEntries(
-                            //     Object.keys(cache[0]).map((key) => [key, ''])
-                            //   )
-                            // );
-                          }}
-                        >
-                          Сбросить
-                        </Button>
-                      </SimpleGrid>
-                    </Stack>
-                  </Drawer>
-                </>
-              ) : (
-                <></>
-              )}
               <Menu>
                 <Menu.Target>
                   <Button ml="auto">Общие действия</Button>
@@ -506,9 +357,6 @@ export const _Table = () => {
                     leftSection={<IconPlus size={20} />}
                   >
                     Добавить
-                  </Menu.Item>
-                  <Menu.Item color="red" leftSection={<IconX size={20} />}>
-                    Удалить все
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
@@ -585,7 +433,7 @@ export const _Table = () => {
                                     value={key}
                                     key={key}
                                     label={key}
-                                    checked={shownColumns[key]}
+                                    checked={shownColumns[key] ?? false}
                                     onChange={(event) =>
                                       setShownColumns((shownColumns) => ({
                                         ...shownColumns,
@@ -707,7 +555,7 @@ export const _Table = () => {
                           <Group p={0} gap={10}>
                             <Checkbox
                               value={item.id}
-                              checked={selectedRows[item.id]}
+                              checked={selectedRows[item.id] ?? false}
                               onChange={(event) =>
                                 setSelectedRows((selectedRows) => ({
                                   ...selectedRows,
@@ -777,39 +625,47 @@ export const _Table = () => {
           ) : (
             <></>
           )}
-          <Box style={{ borderTop: '1px solid #ddd' }}>
-            <Group p={10} gap={10}>
-              <Text lh={1} fz="sm">
-                Выбрано всего: {selectedRowsNumber}
-              </Text>
-              <Menu>
-                <Menu.Target>
-                  <Button disabled={!selectedRowsNumber} ml="auto">
-                    Групповые действия
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item
-                    color="red"
-                    onClick={() =>
-                      openConfirmDeleteModal({
-                        ids: Object.entries(selectedRows).reduce(
-                          (accumulator, [key, value]) =>
-                            value
-                              ? [...accumulator, parseInt(key)]
-                              : accumulator,
-                          [] as number[]
-                        ),
-                      })
-                    }
-                    leftSection={<IconX size={20} />}
-                  >
-                    Удалить
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Group>
-          </Box>
+          {cache.length > 0 ? (
+            <Box style={{ borderTop: '1px solid #ddd' }}>
+              <Group p={10} gap={10}>
+                <Text lh={1} fz="sm">
+                  Выбрано всего: {selectedRowsNumber}
+                </Text>
+                <Menu>
+                  <Menu.Target>
+                    <Button disabled={!selectedRowsNumber} ml="auto">
+                      Групповые действия
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      color="red"
+                      onClick={() =>
+                        openConfirmDeleteModal({
+                          ids: Object.entries(selectedRows).reduce(
+                            (accumulator, [key, value]) =>
+                              value
+                                ? [...accumulator, parseInt(key)]
+                                : accumulator,
+                            [] as number[]
+                          ),
+                        })
+                      }
+                      leftSection={<IconX size={20} />}
+                    >
+                      Удалить
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+            </Box>
+          ) : (
+            <Box>
+              <Group p={10} gap={10}>
+                <Skeleton animate={false} h={350} />
+              </Group>
+            </Box>
+          )}
           <TablePagination
             {...{
               currentPage,

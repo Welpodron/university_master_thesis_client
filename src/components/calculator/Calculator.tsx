@@ -2,45 +2,32 @@ import { Box, Stack, Text } from '@mantine/core';
 import { memo, useEffect, useRef, useState } from 'react';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 
+import API from '../../api/API';
+
+type Route = {
+  longitude: number | null;
+  latitude: number | null;
+}[];
+
 export const Calculator = () => {
-  const [routes, setRoutes] = useState<
-    {
-      longitude: number | null;
-      latitude: number | null;
-    }[][]
-  >([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    const _fetch = async () => {
+    (async () => {
       try {
-        const res = await fetch('http://localhost:3000/cvrp', {
-          headers: {
-            'Content-type': 'application/json',
-          },
+        const res = await API.get<Route[]>('/cvrp', {
           signal: controller.signal,
         });
 
-        if (!res.ok) {
-          throw new Error(`[${res.status}] ${res.statusText}`);
-        }
-
-        const data: {
-          longitude: number | null;
-          latitude: number | null;
-        }[][] = await res.json();
-
-        setRoutes(data);
+        setRoutes(res.data);
       } catch (error) {
         if (!controller.signal?.aborted) {
           console.error(error);
         }
-      } finally {
       }
-    };
-
-    _fetch();
+    })();
 
     return () => {
       controller.abort();
