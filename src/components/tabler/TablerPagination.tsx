@@ -5,6 +5,7 @@ import {
   NumberInput,
   Select,
   Text,
+  useMantineColorScheme,
 } from '@mantine/core';
 import {
   IconChevronLeftPipe,
@@ -37,8 +38,14 @@ export const TablerPagination = ({
   handleCurrentPageChange,
   handlePerPageChange,
 }: TablerPaginationPropsType) => {
+  const { colorScheme } = useMantineColorScheme();
+
   return (
-    <Box style={{ borderTop: '1px solid #ddd' }}>
+    <Box
+      style={{
+        borderTop: `1px solid ${colorScheme === 'light' ? '#ddd' : '#424242'}`,
+      }}
+    >
       <Group p={10} gap={10}>
         <Group gap={10}>
           <ActionIcon

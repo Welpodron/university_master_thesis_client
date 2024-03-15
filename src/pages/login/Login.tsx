@@ -43,7 +43,10 @@ export const Login = () => {
             pass,
           });
 
-          setUser(result.data);
+          setUser({ id: result.data.id, role: result.data.role });
+
+          localStorage.setItem('token', result.data.token);
+
           navigate('/');
         } catch (error) {
           console.error(error);

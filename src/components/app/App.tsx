@@ -1,4 +1,7 @@
+import 'dayjs/locale/ru';
+
 import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';
 
 import { MantineProvider } from '@mantine/core';
@@ -12,26 +15,46 @@ import { Root } from '@/pages/root';
 import { Errorable } from '@/pages/errorable';
 import { Tasks } from '@/pages/tasks';
 import { AuthProvider } from '@/providers/auth';
+import { Vehicles } from '@/pages/vehicles';
+import { Jobs } from '@/pages/jobs';
+import { DatesProvider } from '@mantine/dates';
 
 export const App = () => {
   return (
-    <MantineProvider>
-      <ModalsProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Root />} errorElement={<Errorable />}>
-                <Route
-                  path="tasks"
-                  element={
-                    <Protected role="MANAGER">
-                      <Tasks />
-                    </Protected>
-                  }
-                />
-              </Route>
-              <Route path="/login" element={<Login />} />
-              {/* <Route path="/login" element={<Login />} />
+    <DatesProvider settings={{ locale: 'ru' }}>
+      <MantineProvider>
+        <ModalsProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                <Route path="/" element={<Root />} errorElement={<Errorable />}>
+                  <Route
+                    path="tasks"
+                    element={
+                      <Protected role="MANAGER">
+                        <Tasks />
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="vehicles"
+                    element={
+                      <Protected role="MANAGER">
+                        <Vehicles />
+                      </Protected>
+                    }
+                  />
+                  <Route
+                    path="jobs"
+                    element={
+                      <Protected role="MANAGER">
+                        <Jobs />
+                      </Protected>
+                    }
+                  />
+                </Route>
+                <Route path="/login" element={<Login />} />
+                {/* <Route path="/login" element={<Login />} />
           <Route
             path="/tasks"
             element={
@@ -40,11 +63,12 @@ export const App = () => {
               </Protected>
             }
           /> */}
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </ModalsProvider>
-      <Notifications position="bottom-center" autoClose={false} />
-    </MantineProvider>
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </ModalsProvider>
+        <Notifications position="bottom-center" autoClose={false} />
+      </MantineProvider>
+    </DatesProvider>
   );
 };

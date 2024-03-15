@@ -1,46 +1,50 @@
 import { useCallback, useEffect, useState } from 'react';
 
-type TTask = {
+type TVehicle = {
   id: number;
-  latitude: number;
-  longitude: number;
-  demand: number;
+  name: string;
+  capacity: number;
 };
 
 import API from '@/api/API';
 import { Tabler } from '@/components/tabler/Tabler';
 import { useForm } from '@mantine/form';
-import { LatLngExpression } from 'leaflet';
-import { MapInput } from '@/components/forms/map-input/MapInput';
-import { Stack, NumberInput, Button, Text, Title } from '@mantine/core';
+import {
+  Stack,
+  NumberInput,
+  Button,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconPencil, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { TModelField } from '@/constants';
 
-export const Tasks = () => {
+export const Vehicles = () => {
   const [model, setModel] = useState<Record<string, TModelField>>({});
-  const [data, setData] = useState<TTask[]>([]);
+  const [data, setData] = useState<TVehicle[]>([]);
 
   const addForm = useForm<{
-    coordinates: LatLngExpression | null;
-    demand: number | null;
+    name: string;
+    capacity: number | null;
   }>({
     initialValues: {
-      coordinates: null,
-      demand: null,
+      name: '',
+      capacity: null,
     },
   });
 
   const editForm = useForm<{
     id: number;
-    coordinates: LatLngExpression | null;
-    demand: number | null;
+    name: string;
+    capacity: number | null;
   }>({
     initialValues: {
       id: NaN,
-      coordinates: null,
-      demand: null,
+      name: '',
+      capacity: null,
     },
   });
 
@@ -54,28 +58,20 @@ export const Tasks = () => {
     useDisclosure(false);
 
   const handleAddFormSubmit = useCallback(
-    ({
-      coordinates,
-      demand,
-    }: {
-      coordinates: LatLngExpression | null;
-      demand: number | null;
-    }) => {
-      if (!coordinates || !demand) {
+    ({ name, capacity }: { name: string; capacity: number | null }) => {
+      if (!name || !capacity) {
         return;
       }
       setIsAddFormSubmitting(true);
 
       (async () => {
         try {
-          const res = await API.post<TTask>('/tasks', {
-            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-            demand,
+          const res = await API.post<TVehicle>('/vehicles', {
+            name: name.trim(),
+            capacity,
           });
 
-          setData((cache) => [...cache, res.data]);
-
+          setData((data) => [...data, res.data]);
           closeAddDrawer();
         } catch (error) {
           console.error(error);
@@ -90,24 +86,23 @@ export const Tasks = () => {
   const handleEditFormSubmit = useCallback(
     ({
       id,
-      coordinates,
-      demand,
+      name,
+      capacity,
     }: {
       id: number;
-      coordinates: LatLngExpression | null;
-      demand: number | null;
+      name: string;
+      capacity: number | null;
     }) => {
-      if (!coordinates || !demand) {
+      if (!name || !capacity) {
         return;
       }
       setIsEditFormSubmitting(true);
 
       (async () => {
         try {
-          const res = await API.put<TTask>(`/tasks/${id}`, {
-            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-            demand,
+          const res = await API.put<TVehicle>(`/vehicles/${id}`, {
+            name: name.trim(),
+            capacity,
           });
 
           setData((data) =>
@@ -135,10 +130,9 @@ export const Tasks = () => {
     if (Array.isArray(ids)) {
       (async () => {
         try {
-          await API.delete('/tasks', {
+          await API.delete('/vehicles', {
             data: { ids },
           });
-
           setData((data) => data.filter((row) => !ids.includes(row.id)));
         } catch (error) {
           console.error(error);
@@ -171,11 +165,11 @@ export const Tasks = () => {
     const controllerModel = new AbortController();
 
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
-      'Транспортные заявки';
+      'Транспорт';
 
     (async () => {
       try {
-        const result = await API.get('/_tasksModel', {
+        const result = await API.get('/_vehiclesModel', {
           signal: controllerModel.signal,
         });
 
@@ -189,7 +183,7 @@ export const Tasks = () => {
       }
 
       try {
-        const result = await API.get<TTask[]>('/tasks', {
+        const result = await API.get<TVehicle[]>('/vehicles', {
           signal: controllerData.signal,
         });
 
@@ -209,7 +203,7 @@ export const Tasks = () => {
 
   return (
     <>
-      <Title>Транспортные заявки</Title>
+      <Title>Транспорт</Title>
       <Tabler
         {...{
           data,
@@ -240,8 +234,8 @@ export const Tasks = () => {
               onClick: (item) => {
                 editForm.setValues({
                   id: item.id,
-                  coordinates: [item.latitude, item.longitude],
-                  demand: item.demand,
+                  name: item.name,
+                  capacity: item.capacity,
                 });
                 openEditDrawer();
               },
@@ -258,20 +252,22 @@ export const Tasks = () => {
           addForm: (
             <form onSubmit={addForm.onSubmit(handleAddFormSubmit)}>
               <Stack>
-                <MapInput
-                  state={[
-                    addForm.getInputProps('coordinates').value,
-                    addForm.getInputProps('coordinates').onChange,
-                  ]}
+                <TextInput
+                  label="Название"
+                  description="Название транспорта"
+                  placeholder="Волга"
+                  min={1}
+                  required={true}
+                  {...addForm.getInputProps('name')}
                 />
                 <NumberInput
-                  label="Запрос"
-                  description="Количество элементов / шт"
+                  label="Вместимость"
+                  description="Вместимость транспорта"
                   placeholder="1"
                   allowDecimal={false}
                   min={1}
                   required={true}
-                  {...addForm.getInputProps('demand')}
+                  {...addForm.getInputProps('capacity')}
                 />
                 <Button
                   disabled={isAddFormSubmitting}
@@ -289,21 +285,22 @@ export const Tasks = () => {
           editForm: (
             <form onSubmit={editForm.onSubmit(handleEditFormSubmit)}>
               <Stack>
-                <MapInput
-                  state={[
-                    editForm.getInputProps('coordinates').value,
-                    editForm.getInputProps('coordinates').onChange,
-                  ]}
-                  isDeleteEnabled={false}
+                <TextInput
+                  label="Название"
+                  description="Название транспорта"
+                  placeholder="Волга"
+                  min={1}
+                  required={true}
+                  {...editForm.getInputProps('name')}
                 />
                 <NumberInput
-                  label="Запрос"
-                  description="Количество элементов / шт"
+                  label="Вместимость"
+                  description="Вместимость транспорта"
                   placeholder="1"
                   allowDecimal={false}
                   min={1}
                   required={true}
-                  {...editForm.getInputProps('demand')}
+                  {...editForm.getInputProps('capacity')}
                 />
                 <Button
                   loading={isEditFormSubmitting}

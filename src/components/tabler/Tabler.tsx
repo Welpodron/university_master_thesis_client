@@ -1,4 +1,8 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, memo, useEffect, useState } from 'react';
+
+import dayjs from 'dayjs';
+import customParserFormat from 'dayjs/plugin/customParseFormat';
+
 import { useSort } from './hooks/useSort';
 import { usePaginate } from './hooks/usePaginate';
 import {
@@ -17,6 +21,12 @@ import {
   Skeleton,
   Text,
   Menu,
+  MenuItemProps,
+  useMantineColorScheme,
+  Badge,
+  TextInput,
+  Select,
+  NumberInput,
 } from '@mantine/core';
 import {
   IconSettings,
@@ -24,26 +34,126 @@ import {
   IconArrowNarrowDown,
   IconSelector,
   IconPlus,
+  IconMenu2,
+  IconCalendar,
+  IconFilter,
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import { TablerPagination } from './TablerPagination';
+import { useFilter } from './hooks/useFilter';
+import { TModelField } from '@/constants';
+import { DatePickerInput } from '@mantine/dates';
 
-export type TTablerProps<
-  T extends Record<string, any> & { id: number }[] = []
-> = {
-  data: T;
+dayjs.extend(customParserFormat);
 
-  onEdit: () => void;
-  addForm: ReactElement;
-  onDelete: () => void;
+//! TODO: Rewrite this fucking shit
+const translateColumn = (column: string) => {
+  switch (column) {
+    case 'longitude':
+      return 'долгота';
+    case 'latitude':
+      return 'широта';
+    case 'demand':
+      return 'запрос';
+    case 'completed':
+      return 'завершен';
+    case 'createdAt':
+      return 'создан (дата)';
+    case 'completedAt':
+      return 'завершен (дата)';
+    case 'name':
+      return 'имя';
+    case 'capacity':
+      return 'вместимость';
+    case 'date':
+      return 'дата';
+    case 'startedAt':
+      return 'начат (дата)';
+    default:
+      return column;
+  }
 };
 
-export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
+const FormattedValue = memo(({ children }: { children: any }) => {
+  if (children == null) {
+    return '';
+  }
+
+  if (typeof children === 'string') {
+    if (dayjs(children.replace(/T.*Z/g, ''), 'YYYY-MM-DD', true).isValid()) {
+      return (
+        <Badge
+          variant="light"
+          color="gray"
+          rightSection={<IconCalendar size={16} />}
+        >
+          {dayjs(children).format('DD.MM.YYYY')}
+        </Badge>
+      );
+    }
+  }
+
+  if (children === false) {
+    return (
+      <Badge variant="light" color="red">
+        Нет
+      </Badge>
+    );
+  }
+
+  if (children === true) {
+    return (
+      <Badge variant="light" color="green">
+        Да
+      </Badge>
+    );
+  }
+
+  return children.toString();
+});
+
+export type TTablerProps<T extends Record<string, any> & { id: number }> = {
+  data: T[];
+  model: Record<string, TModelField>;
+
+  editForm: ReactElement;
+  addForm: ReactElement;
+
+  isAddDrawerOpened: boolean;
+  openAddDrawer: () => void;
+  closeAddDrawer: () => void;
+
+  isEditDrawerOpened: boolean;
+  openEditDrawer: () => void;
+  closeEditDrawer: () => void;
+
+  itemActions: (MenuItemProps & {
+    name: string;
+    onClick: (data: T) => void;
+  })[];
+
+  groupActions: (MenuItemProps & {
+    name: string;
+    onClick: (data: number[]) => void;
+  })[];
+};
+
+export const Tabler = <T extends Record<string, any> & { id: number }>({
   data,
-  onEdit,
+  model,
+  editForm,
   addForm,
-  onDelete,
+  isAddDrawerOpened,
+  openAddDrawer,
+  closeAddDrawer,
+  isEditDrawerOpened,
+  openEditDrawer,
+  closeEditDrawer,
+  itemActions,
+  groupActions,
 }: TTablerProps<T>) => {
+  const { colorScheme } = useMantineColorScheme();
+
   const [cache, setCache] = useState(data);
 
   const [selectedRows, setSelectedRows] = useState<{
@@ -58,9 +168,23 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
     [k: string]: boolean;
   }>({});
 
+  const [filterObject, setFilterObject] = useState<{
+    [k: string]: any;
+  }>({});
+
+  //! TODO: wtf is this???
+  const [filterForm, setFilterForm] = useState<{
+    [k: string]: any;
+  }>({});
+
   const [
     isShownColumnsDrawerOpened,
     { open: openShownColumnsDrawer, close: closeShownColumnsDrawer },
+  ] = useDisclosure(false);
+
+  const [
+    isFilterDrawerOpened,
+    { open: openFilterDrawer, close: closeFilterDrawer },
   ] = useDisclosure(false);
 
   useEffect(() => {
@@ -73,12 +197,23 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
       setShownColumns(
         Object.fromEntries(Object.keys(cache[0]).map((key) => [key, true]))
       );
+      setFilterObject(
+        Object.fromEntries(Object.keys(cache[0]).map((key) => [key, null]))
+      );
+      setFilterForm(
+        Object.fromEntries(Object.keys(cache[0]).map((key) => [key, null]))
+      );
     }
   }, [cache]);
 
+  const { filteredData } = useFilter({
+    initialData: cache,
+    filterObject,
+  });
+
   const { sortedData, sortBy, sortDirection, setSortDirection, setSortBy } =
     useSort({
-      initialData: cache,
+      initialData: filteredData,
     });
 
   const {
@@ -101,20 +236,209 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
   const isSelectedRowsIndeterminate =
     paginatedData.some((row) => selectedRows[row.id]) && !isSelectedRowsChecked;
 
-  const [isAddDrawerOpened, { open: openAddDrawer, close: closeAddDrawer }] =
-    useDisclosure(false);
-
-  console.log(paginatedData);
-
   return (
     <>
       <Paper withBorder mt="xl" pos="relative">
         <Box
           style={{
-            borderBottom: '1px solid #ddd',
+            borderBottom: `1px solid ${
+              colorScheme === 'light' ? '#ddd' : '#424242'
+            }`,
           }}
         >
           <Group p={10} gap={10}>
+            {cache.length > 0 && (
+              <>
+                <ActionIcon
+                  onClick={openFilterDrawer}
+                  variant="light"
+                  size="lg"
+                >
+                  <IconFilter />
+                </ActionIcon>
+                <Drawer
+                  offset={8}
+                  position="left"
+                  radius="md"
+                  opened={isFilterDrawerOpened}
+                  title={
+                    <Text fw={500} fz="lg">
+                      Фильтр
+                    </Text>
+                  }
+                  onClose={closeFilterDrawer}
+                >
+                  <Stack>
+                    {Object.entries(filterForm).map(([key, value]) => {
+                      if (model[key]) {
+                        if (model[key].type === 'Boolean') {
+                          return (
+                            <Select
+                              key={key}
+                              label={translateColumn(key)}
+                              clearable={true}
+                              value={
+                                value == null
+                                  ? null
+                                  : value === true
+                                  ? 'Y'
+                                  : 'N'
+                              }
+                              onChange={(_value) => {
+                                setFilterForm((filter) => {
+                                  return {
+                                    ...filter,
+                                    [key]:
+                                      _value == null
+                                        ? null
+                                        : _value === 'Y'
+                                        ? true
+                                        : false,
+                                  };
+                                });
+                              }}
+                              data={[
+                                {
+                                  label: 'Да',
+                                  value: 'Y',
+                                },
+                                {
+                                  label: 'Нет',
+                                  value: 'N',
+                                },
+                              ]}
+                            />
+                          );
+                        }
+
+                        if (model[key].type === 'Int') {
+                          return (
+                            <NumberInput
+                              label={translateColumn(key)}
+                              key={key}
+                              value={value ?? ''}
+                              allowDecimal={false}
+                              onChange={(_value) =>
+                                setFilterForm((filter) => {
+                                  return {
+                                    ...filter,
+                                    [key]:
+                                      typeof _value === 'string'
+                                        ? null
+                                        : _value,
+                                  };
+                                })
+                              }
+                            />
+                          );
+                        }
+
+                        if (model[key].type === 'Float') {
+                          return (
+                            <NumberInput
+                              label={translateColumn(key)}
+                              key={key}
+                              value={value ?? ''}
+                              allowDecimal={true}
+                              onChange={(_value) =>
+                                setFilterForm((filter) => {
+                                  return {
+                                    ...filter,
+                                    [key]:
+                                      typeof _value === 'string'
+                                        ? null
+                                        : _value,
+                                  };
+                                })
+                              }
+                            />
+                          );
+                        }
+
+                        if (model[key].type === 'DateTime') {
+                          return (
+                            <DatePickerInput
+                              leftSection={<IconCalendar size={16} />}
+                              clearable={true}
+                              leftSectionPointerEvents="none"
+                              label={translateColumn(key)}
+                              key={key}
+                              value={value}
+                              onChange={(_value) => {
+                                setFilterForm((filter) => {
+                                  return {
+                                    ...filter,
+                                    [key]: _value,
+                                  };
+                                });
+                              }}
+                            />
+                          );
+                        }
+                      }
+
+                      return (
+                        <TextInput
+                          label={translateColumn(key)}
+                          key={key}
+                          value={value ?? ''}
+                          onChange={(event) =>
+                            setFilterForm((filter) => {
+                              return {
+                                ...filter,
+                                [key]: event.currentTarget.value,
+                              };
+                            })
+                          }
+                        />
+                      );
+                    })}
+                    <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                      <Button
+                        onClick={() => {
+                          setSelectedRows((selectedRows) =>
+                            Object.fromEntries(
+                              Object.keys(selectedRows).map((key) => [
+                                key,
+                                false,
+                              ])
+                            )
+                          );
+                          setFilterObject(filterForm);
+                        }}
+                      >
+                        Применить
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setSelectedRows((selectedRows) =>
+                            Object.fromEntries(
+                              Object.keys(selectedRows).map((key) => [
+                                key,
+                                false,
+                              ])
+                            )
+                          );
+                          setFilterForm((filter) =>
+                            Object.fromEntries(
+                              Object.keys(filter).map((key) => [key, null])
+                            )
+                          );
+                          setFilterObject((filter) =>
+                            Object.fromEntries(
+                              Object.keys(filter).map((key) => [key, null])
+                            )
+                          );
+                        }}
+                        variant="light"
+                      >
+                        Сбросить
+                      </Button>
+                    </SimpleGrid>
+                  </Stack>
+                </Drawer>
+              </>
+            )}
             <Menu>
               <Menu.Target>
                 <Button ml="auto">Общие действия</Button>
@@ -147,8 +471,12 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
                         lineHeight: 1,
                         fontWeight: 500,
                         textTransform: 'uppercase',
-                        borderBottom: '1px solid #ddd',
-                        borderRight: '1px solid #ddd',
+                        borderBottom: `1px solid ${
+                          colorScheme === 'light' ? '#ddd' : '#424242'
+                        }`,
+                        borderRight: `1px solid ${
+                          colorScheme === 'light' ? '#ddd' : '#424242'
+                        }`,
                         width: '95px',
                       }}
                     >
@@ -201,7 +529,7 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
                                 <Checkbox
                                   value={key}
                                   key={key}
-                                  label={key}
+                                  label={translateColumn(key)}
                                   checked={shownColumns[key] ?? false}
                                   onChange={(event) =>
                                     setShownColumns((shownColumns) => ({
@@ -256,9 +584,13 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
                             lineHeight: 1,
                             fontWeight: 500,
                             textTransform: 'uppercase',
-                            minWidth: '150px',
-                            borderBottom: '1px solid #ddd',
-                            borderRight: '1px solid #ddd',
+                            minWidth: `${key == 'id' ? '95px' : '150px'}`,
+                            borderBottom: `1px solid ${
+                              colorScheme === 'light' ? '#ddd' : '#424242'
+                            }`,
+                            borderRight: `1px solid ${
+                              colorScheme === 'light' ? '#ddd' : '#424242'
+                            }`,
                           }}
                           key={key}
                         >
@@ -280,7 +612,7 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
                           >
                             <Group justify="space-between">
                               <Text lh={1} tt="capitalize" fw={500} fz="16">
-                                {key}
+                                {translateColumn(key)}
                               </Text>
                               <Center>
                                 {key === sortBy ? (
@@ -307,7 +639,11 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
                           ? '2px dashed #09B8FF'
                           : '',
                         outlineOffset: '-4px',
-                        background: selectedRows[item.id] ? '#E0FBFF' : '',
+                        background: selectedRows[item.id]
+                          ? colorScheme === 'light'
+                            ? '#E0FBFF80'
+                            : '#E0FBFF26'
+                          : '',
                       }}
                       key={item.id}
                     >
@@ -316,7 +652,9 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
                         style={{
                           lineHeight: 1,
                           width: '95px',
-                          borderRight: '1px solid #f5f5f5',
+                          borderRight: `1px solid ${
+                            colorScheme === 'light' ? '#f5f5f5' : '#424242'
+                          }`,
                         }}
                       >
                         <Group p={0} gap={10}>
@@ -331,21 +669,42 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
                               }))
                             }
                           />
+                          <Menu>
+                            <Menu.Target>
+                              <ActionIcon variant="light" size="lg">
+                                <IconMenu2 />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              {itemActions.map((action, index) => (
+                                <Menu.Item
+                                  key={index}
+                                  onClick={() => action.onClick(item)}
+                                  color={action.color}
+                                  leftSection={action.leftSection}
+                                >
+                                  {action.name}
+                                </Menu.Item>
+                              ))}
+                            </Menu.Dropdown>
+                          </Menu>
                         </Group>
                       </Table.Td>
                       {Object.entries(item)
                         .filter(([key, _]) => shownColumns[key])
-                        .map(([_, value], i) => (
+                        .map(([key, value], i) => (
                           <Table.Td
                             p={15}
                             style={{
                               lineHeight: 1,
-                              minWidth: '150px',
-                              borderRight: '1px solid #f5f5f5',
+                              minWidth: `${key == 'id' ? '95px' : '150px'}`,
+                              borderRight: `1px solid ${
+                                colorScheme === 'light' ? '#f5f5f5' : '#424242'
+                              }`,
                             }}
                             key={`${item.id.toString()}_${i}`}
                           >
-                            {value == null ? '' : value.toString()}
+                            <FormattedValue>{value}</FormattedValue>
                           </Table.Td>
                         ))}
                     </Table.Tr>
@@ -358,11 +717,46 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
           <></>
         )}
         {cache.length > 0 ? (
-          <Box style={{ borderTop: '1px solid #ddd' }}>
+          <Box
+            style={{
+              borderTop: `1px solid ${
+                colorScheme === 'light' ? '#ddd' : '#424242'
+              }`,
+            }}
+          >
             <Group p={10} gap={10}>
               <Text lh={1} fz="sm">
                 Выбрано всего: {selectedRowsNumber}
               </Text>
+              <Menu>
+                <Menu.Target>
+                  <Button disabled={!selectedRowsNumber} ml="auto">
+                    Групповые действия
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {groupActions.map((action, index) => (
+                    <Menu.Item
+                      key={index}
+                      onClick={() =>
+                        action.onClick(
+                          Object.entries(selectedRows).reduce(
+                            (accumulator, [key, value]) =>
+                              value
+                                ? [...accumulator, parseInt(key)]
+                                : accumulator,
+                            [] as number[]
+                          )
+                        )
+                      }
+                      color={action.color}
+                      leftSection={action.leftSection}
+                    >
+                      {action.name}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           </Box>
         ) : (
@@ -386,6 +780,20 @@ export const Tabler = <T extends Record<string, any> & { id: number }[] = []>({
           }}
         />
       </Paper>
+      <Drawer
+        offset={8}
+        position="right"
+        radius="md"
+        opened={isEditDrawerOpened}
+        title={
+          <Text fw={500} fz="lg">
+            Редактирование элемента
+          </Text>
+        }
+        onClose={closeEditDrawer}
+      >
+        {editForm}
+      </Drawer>
       <Drawer
         offset={8}
         position="right"

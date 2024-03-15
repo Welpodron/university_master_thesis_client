@@ -1,46 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
 
-type TTask = {
+type TJob = {
   id: number;
-  latitude: number;
-  longitude: number;
-  demand: number;
+  date: Date;
+  completed: boolean;
 };
 
 import API from '@/api/API';
 import { Tabler } from '@/components/tabler/Tabler';
 import { useForm } from '@mantine/form';
-import { LatLngExpression } from 'leaflet';
-import { MapInput } from '@/components/forms/map-input/MapInput';
-import { Stack, NumberInput, Button, Text, Title } from '@mantine/core';
+import { Stack, Button, Text, Switch, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconPencil, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
+import { DatePickerInput } from '@mantine/dates';
 import { TModelField } from '@/constants';
 
-export const Tasks = () => {
+export const Jobs = () => {
   const [model, setModel] = useState<Record<string, TModelField>>({});
-  const [data, setData] = useState<TTask[]>([]);
+  const [data, setData] = useState<TJob[]>([]);
 
   const addForm = useForm<{
-    coordinates: LatLngExpression | null;
-    demand: number | null;
+    date: Date | null;
   }>({
     initialValues: {
-      coordinates: null,
-      demand: null,
+      date: null,
     },
   });
 
   const editForm = useForm<{
     id: number;
-    coordinates: LatLngExpression | null;
-    demand: number | null;
+    date: Date | null;
+    completed: boolean;
   }>({
     initialValues: {
       id: NaN,
-      coordinates: null,
-      demand: null,
+      date: null,
+      completed: false,
     },
   });
 
@@ -53,61 +49,48 @@ export const Tasks = () => {
   const [isEditDrawerOpened, { open: openEditDrawer, close: closeEditDrawer }] =
     useDisclosure(false);
 
-  const handleAddFormSubmit = useCallback(
-    ({
-      coordinates,
-      demand,
-    }: {
-      coordinates: LatLngExpression | null;
-      demand: number | null;
-    }) => {
-      if (!coordinates || !demand) {
-        return;
+  const handleAddFormSubmit = useCallback(({ date }: { date: Date | null }) => {
+    if (!date) {
+      return;
+    }
+    setIsAddFormSubmitting(true);
+
+    (async () => {
+      try {
+        const res = await API.post<TJob>('/jobs', {
+          date,
+        });
+
+        setData((data) => [...data, res.data]);
+        closeAddDrawer();
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsAddFormSubmitting(false);
       }
-      setIsAddFormSubmitting(true);
-
-      (async () => {
-        try {
-          const res = await API.post<TTask>('/tasks', {
-            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-            demand,
-          });
-
-          setData((cache) => [...cache, res.data]);
-
-          closeAddDrawer();
-        } catch (error) {
-          console.error(error);
-        } finally {
-          setIsAddFormSubmitting(false);
-        }
-      })();
-    },
-    []
-  );
+    })();
+  }, []);
 
   const handleEditFormSubmit = useCallback(
     ({
       id,
-      coordinates,
-      demand,
+      date,
+      completed,
     }: {
       id: number;
-      coordinates: LatLngExpression | null;
-      demand: number | null;
+      date: Date | null;
+      completed: boolean;
     }) => {
-      if (!coordinates || !demand) {
+      if (!date) {
         return;
       }
       setIsEditFormSubmitting(true);
 
       (async () => {
         try {
-          const res = await API.put<TTask>(`/tasks/${id}`, {
-            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-            demand,
+          const res = await API.put<TJob>(`/jobs/${id}`, {
+            date,
+            completed: completed === true,
           });
 
           setData((data) =>
@@ -135,10 +118,9 @@ export const Tasks = () => {
     if (Array.isArray(ids)) {
       (async () => {
         try {
-          await API.delete('/tasks', {
+          await API.delete('/jobs', {
             data: { ids },
           });
-
           setData((data) => data.filter((row) => !ids.includes(row.id)));
         } catch (error) {
           console.error(error);
@@ -171,11 +153,11 @@ export const Tasks = () => {
     const controllerModel = new AbortController();
 
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
-      'Транспортные заявки';
+      'Агенты';
 
     (async () => {
       try {
-        const result = await API.get('/_tasksModel', {
+        const result = await API.get('/_jobsModel', {
           signal: controllerModel.signal,
         });
 
@@ -189,7 +171,7 @@ export const Tasks = () => {
       }
 
       try {
-        const result = await API.get<TTask[]>('/tasks', {
+        const result = await API.get<TJob[]>('/jobs', {
           signal: controllerData.signal,
         });
 
@@ -209,7 +191,7 @@ export const Tasks = () => {
 
   return (
     <>
-      <Title>Транспортные заявки</Title>
+      <Title>Агенты</Title>
       <Tabler
         {...{
           data,
@@ -240,8 +222,8 @@ export const Tasks = () => {
               onClick: (item) => {
                 editForm.setValues({
                   id: item.id,
-                  coordinates: [item.latitude, item.longitude],
-                  demand: item.demand,
+                  date: new Date(item.date),
+                  completed: item.completed,
                 });
                 openEditDrawer();
               },
@@ -258,20 +240,13 @@ export const Tasks = () => {
           addForm: (
             <form onSubmit={addForm.onSubmit(handleAddFormSubmit)}>
               <Stack>
-                <MapInput
-                  state={[
-                    addForm.getInputProps('coordinates').value,
-                    addForm.getInputProps('coordinates').onChange,
-                  ]}
-                />
-                <NumberInput
-                  label="Запрос"
-                  description="Количество элементов / шт"
-                  placeholder="1"
-                  allowDecimal={false}
-                  min={1}
+                <DatePickerInput
+                  label="Дата агента"
+                  description="Дата когда будет выполнен агент"
+                  placeholder="Выберите дату ручного выполнения агента"
+                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                   required={true}
-                  {...addForm.getInputProps('demand')}
+                  {...addForm.getInputProps('date')}
                 />
                 <Button
                   disabled={isAddFormSubmitting}
@@ -289,21 +264,18 @@ export const Tasks = () => {
           editForm: (
             <form onSubmit={editForm.onSubmit(handleEditFormSubmit)}>
               <Stack>
-                <MapInput
-                  state={[
-                    editForm.getInputProps('coordinates').value,
-                    editForm.getInputProps('coordinates').onChange,
-                  ]}
-                  isDeleteEnabled={false}
-                />
-                <NumberInput
-                  label="Запрос"
-                  description="Количество элементов / шт"
-                  placeholder="1"
-                  allowDecimal={false}
-                  min={1}
+                <DatePickerInput
+                  label="Дата агента"
+                  description="Дата когда будет выполнен агент"
+                  placeholder="Выберите дату ручного выполнения агента"
+                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                   required={true}
-                  {...editForm.getInputProps('demand')}
+                  {...editForm.getInputProps('date')}
+                />
+                <Switch
+                  label="Агент выполнен"
+                  labelPosition="left"
+                  {...editForm.getInputProps('completed', { type: 'checkbox' })}
                 />
                 <Button
                   loading={isEditFormSubmitting}
