@@ -1,15 +1,28 @@
-import { Paper, TextInput, PasswordInput, Button, Center } from '@mantine/core';
+import {
+  Paper,
+  TextInput,
+  PasswordInput,
+  Button,
+  Center,
+  Alert,
+  Stack,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { useCallback, useContext, useState } from 'react';
+import { useCallback } from 'react';
 
-import API from '@/api/API';
-import { UserSetterContext } from '@/providers/auth';
-import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { AppDispatch, RootState } from '@/store/store';
+import { authLogin } from '@/store/thunks/auth';
+import { IconAlertTriangle } from '@tabler/icons-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const Login = () => {
-  const setUser = useContext(UserSetterContext);
-
+  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = location.state?.from?.pathname || '/';
 
   const loginForm = useForm<{
     email: string;
@@ -26,65 +39,86 @@ export const Login = () => {
     },
   });
 
-  const [isLoginFormSubmitting, setIsLoginFormSubmitting] = useState(false);
-
   const handleLoginFormSubmit = useCallback(
     ({ email, pass }: { email: string; pass: string }) => {
       if (!email || !pass) {
         return;
       }
 
-      setIsLoginFormSubmitting(true);
-
       (async () => {
         try {
-          const result = await API.post('/login', {
-            email,
-            pass,
-          });
+          await dispatch(authLogin({ email, pass }));
 
-          setUser({ id: result.data.id, role: result.data.role });
-
-          localStorage.setItem('token', result.data.token);
-
-          navigate('/');
+          navigate(from, { replace: true });
         } catch (error) {
           console.error(error);
-        } finally {
-          setIsLoginFormSubmitting(false);
         }
       })();
     },
     []
   );
+  // const handleLoginFormSubmit = useCallback(
+  //   ({ email, pass }: { email: string; pass: string }) => {
+  //     if (!email || !pass) {
+  //       return;
+  //     }
+
+  //     setIsLoginFormSubmitting(true);
+
+  //     (async () => {
+  //       try {
+  //         const result = await API.post('/login', {
+  //           email,
+  //           pass,
+  //         });
+
+  //         setUser({ id: result.data.id, role: result.data.role });
+
+  //         localStorage.setItem('token', result.data.token);
+
+  //         navigate('/');
+  //       } catch (error) {
+  //         console.error(error);
+  //       } finally {
+  //         setIsLoginFormSubmitting(false);
+  //       }
+  //     })();
+  //   },
+  //   []
+  // );
 
   return (
     <Center>
       <form onSubmit={loginForm.onSubmit(handleLoginFormSubmit)}>
         <Paper w={320} withBorder shadow="md" p={25} mt={10} radius="md">
-          <TextInput
-            type="email"
-            label="Email"
-            placeholder="example@mail.ru"
-            required
-            {...loginForm.getInputProps('email')}
-          />
-          <PasswordInput
-            label="Пароль"
-            placeholder="Ваш пароль"
-            required
-            mt="md"
-            {...loginForm.getInputProps('pass')}
-          />
-          <Button
-            type="submit"
-            disabled={isLoginFormSubmitting || !loginForm.isValid()}
-            loading={isLoginFormSubmitting}
-            fullWidth
-            mt="xl"
-          >
-            Войти
-          </Button>
+          <Stack>
+            {error && (
+              <Alert icon={<IconAlertTriangle />} variant="light" color="red">
+                {error.message}
+              </Alert>
+            )}
+            <TextInput
+              type="email"
+              label="Email"
+              placeholder="example@mail.com"
+              required
+              {...loginForm.getInputProps('email')}
+            />
+            <PasswordInput
+              label="Пароль"
+              placeholder="Ваш пароль"
+              required
+              {...loginForm.getInputProps('pass')}
+            />
+            <Button
+              type="submit"
+              disabled={loading || !loginForm.isValid()}
+              loading={loading}
+              fullWidth
+            >
+              Войти
+            </Button>
+          </Stack>
         </Paper>
       </form>
     </Center>

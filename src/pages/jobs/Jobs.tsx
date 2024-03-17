@@ -248,6 +248,10 @@ export const Jobs = () => {
                   required={true}
                   {...addForm.getInputProps('date')}
                 />
+                <Text fz="xs" c="dimmed">
+                  <span style={{ color: 'red' }}>*</span> - поля, обязательные
+                  для заполнения
+                </Text>
                 <Button
                   disabled={isAddFormSubmitting}
                   loading={isAddFormSubmitting}
@@ -277,6 +281,10 @@ export const Jobs = () => {
                   labelPosition="left"
                   {...editForm.getInputProps('completed', { type: 'checkbox' })}
                 />
+                <Text fz="xs" c="dimmed">
+                  <span style={{ color: 'red' }}>*</span> - поля, обязательные
+                  для заполнения
+                </Text>
                 <Button
                   loading={isEditFormSubmitting}
                   disabled={isEditFormSubmitting}

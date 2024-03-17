@@ -10,14 +10,21 @@ import {
   useComputedColorScheme,
   useMantineColorScheme,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useFullscreen } from '@mantine/hooks';
 import {
+  IconArrowsMaximize,
+  IconArrowsMinimize,
   IconClipboardList,
+  IconListNumbers,
   IconLogin,
   IconLogout,
+  IconMaximize,
+  IconMoon,
   IconRobot,
   IconSun,
   IconTruck,
+  IconUser,
+  IconUsers,
 } from '@tabler/icons-react';
 import { Link, Outlet } from 'react-router-dom';
 
@@ -27,34 +34,64 @@ export const Root = () => {
     getInitialValueInEffect: true,
   });
 
+  const { toggle: toggleFullScreen, fullscreen } = useFullscreen();
+
   return (
     <AppShell
       layout="alt"
       header={{ height: 60 }}
       footer={{ height: 60 }}
-      navbar={{ width: 85, breakpoint: 0 }}
+      navbar={{ width: 75, breakpoint: 0 }}
       padding="md"
     >
       <AppShell.Header>
         <Group h="100%" px="md">
-          <Tooltip color="red" label="Выход">
-            <ActionIcon
-              onClick={() =>
-                setColorScheme(
-                  computedColorScheme === 'light' ? 'dark' : 'light'
-                )
-              }
-              variant="light"
-              color="red"
-              size="xl"
-            >
-              <IconSun stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
+          <Group ml="auto">
+            <Tooltip label="Экранный режим">
+              <ActionIcon onClick={toggleFullScreen} variant="light" size="xl">
+                {fullscreen ? (
+                  <IconArrowsMinimize stroke={1.5} />
+                ) : (
+                  <IconArrowsMaximize stroke={1.5} />
+                )}
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Цветовая схема">
+              <ActionIcon
+                onClick={() =>
+                  setColorScheme(
+                    computedColorScheme === 'light' ? 'dark' : 'light'
+                  )
+                }
+                variant="light"
+                color={computedColorScheme === 'light' ? 'indigo' : 'yellow'}
+                size="xl"
+              >
+                {computedColorScheme === 'dark' ? (
+                  <IconSun stroke={1.5} />
+                ) : (
+                  <IconMoon stroke={1.5} />
+                )}
+              </ActionIcon>
+            </Tooltip>
+          </Group>
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar
+        p="md"
+        bg={computedColorScheme === 'light' ? 'gray.0' : 'dark.9'}
+      >
         <Stack align="center">
+          <Tooltip label="Назначения">
+            <ActionIcon
+              component={Link}
+              to="/assignments"
+              variant="light"
+              size="xl"
+            >
+              <IconListNumbers stroke={1.5} />
+            </ActionIcon>
+          </Tooltip>
           <Tooltip label="Заявки">
             <ActionIcon component={Link} to="/tasks" variant="light" size="xl">
               <IconClipboardList stroke={1.5} />
@@ -75,11 +112,21 @@ export const Root = () => {
               <IconRobot stroke={1.5} />
             </ActionIcon>
           </Tooltip>
+          <Tooltip label="Сотрудники">
+            <ActionIcon component={Link} to="/users" variant="light" size="xl">
+              <IconUsers stroke={1.5} />
+            </ActionIcon>
+          </Tooltip>
         </Stack>
         <Stack mt="auto" align="center">
-          <Tooltip label="Вход">
-            <ActionIcon component={Link} to="/login" variant="light" size="xl">
-              <IconLogin stroke={1.5} />
+          <Tooltip label="Аккаунт">
+            <ActionIcon
+              component={Link}
+              to="/personal"
+              variant="light"
+              size="xl"
+            >
+              <IconUser stroke={1.5} />
             </ActionIcon>
           </Tooltip>
           <Tooltip color="red" label="Выход">

@@ -18,7 +18,7 @@ import { IconPencil, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { TModelField } from '@/constants';
 
-export const Tasks = () => {
+export const Assignments = () => {
   const [model, setModel] = useState<Record<string, TModelField>>({});
   const [data, setData] = useState<TTask[]>([]);
 
@@ -175,13 +175,13 @@ export const Tasks = () => {
 
     (async () => {
       try {
-        const result = await API.get('/_tasksModel', {
+        const result = await API.get('/_assignmentsModel', {
           signal: controllerModel.signal,
         });
 
         console.log(result.data);
 
-        setModel(result.data);
+        // setModel(result.data);
       } catch (error) {
         if (!controllerModel.signal?.aborted) {
           console.error(error);
@@ -189,11 +189,11 @@ export const Tasks = () => {
       }
 
       try {
-        const result = await API.get<TTask[]>('/tasks', {
+        const result = await API.get<TTask[]>('/assignments', {
           signal: controllerData.signal,
         });
-
-        setData(result.data);
+        console.log(result.data);
+        // setData(result.data);
       } catch (error) {
         if (!controllerData.signal?.aborted) {
           console.error(error);

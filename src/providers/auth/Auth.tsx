@@ -1,6 +1,8 @@
-import { ReactNode, createContext, useEffect, useState } from 'react';
+import { ReactNode, createContext, useEffect, useRef, useState } from 'react';
 
 import API from '@/api/API';
+import { AppDispatch, RootState } from '@/store/store';
+import { useDispatch, useSelector } from 'react-redux';
 
 export type TUser = {
   id: number;
@@ -13,74 +15,74 @@ export const UserSetterContext = createContext<(value: TUser) => void>(
 );
 export const UserInitedGetterContext = createContext(false);
 
+import { authVerify } from '@/store/thunks/auth';
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<TUser>(null);
-  const [isInited, setIsInited] = useState(false);
+  // const [user, setUser] = useState<TUser>(null);
+  // const [isInited, setIsInited] = useState(false);
+
+  const dispatch = useDispatch<AppDispatch>();
+
+  const mounted = useRef(false);
 
   useEffect(() => {
-    const responseInterceptor = API.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const previousRequest = error?.config;
-
-        if (error?.response?.status === 401 && !previousRequest?.sent) {
-          previousRequest.sent = true;
-
-          const result = await API.post('/refresh');
-
-          localStorage.setItem('token', result.data.token);
-
-          setUser({ id: result.data.id, role: result.data.role });
-
-          previousRequest.headers.Authorization = `Bearer ${result.data.token}`;
-
-          return API(previousRequest);
-        }
-
-        return Promise.reject(error);
-      }
-    );
-
-    const requestInterceptor = API.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('token');
-
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    (async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
+    if (!mounted.current) {
+      (async () => {
         try {
-          const result = await API.post('/verify');
-
-          setUser({ id: result.data.id, role: result.data.role });
-        } catch (_) {
-        } finally {
-          setIsInited(true);
+          await dispatch(authVerify());
+        } catch (error) {
+          console.error(error);
         }
-      }
-    })();
+      })();
 
-    return () => {
-      API.interceptors.response.eject(responseInterceptor);
-      API.interceptors.request.eject(requestInterceptor);
-    };
+      mounted.current = true;
+    }
   }, []);
 
-  return (
-    <UserInitedGetterContext.Provider value={isInited}>
-      <UserGetterContext.Provider value={user}>
-        <UserSetterContext.Provider value={setUser}>
-          {children}
-        </UserSetterContext.Provider>
-      </UserGetterContext.Provider>
-    </UserInitedGetterContext.Provider>
-  );
+  // useEffect(() => {
+  //   const responseInterceptor = API.interceptors.response.use(
+  //     (response) => response,
+  //     async (error) => {
+  //       const previousRequest = error?.config;
+  //       if (error?.response?.status === 401 && !previousRequest?.sent) {
+  //         previousRequest.sent = true;
+  //         const result = await API.post('/refresh');
+  //         localStorage.setItem('token', result.data.token);
+  //         setUser({ id: result.data.id, role: result.data.role });
+  //         previousRequest.headers.Authorization = `Bearer ${result.data.token}`;
+  //         return API(previousRequest);
+  //       }
+  //       return Promise.reject(error);
+  //     }
+  //   );
+  //   const requestInterceptor = API.interceptors.request.use(
+  //     (config) => {
+  //       const token = localStorage.getItem('token');
+  //       if (token) {
+  //         config.headers.Authorization = `Bearer ${token}`;
+  //       }
+  //       return config;
+  //     },
+  //     (error) => Promise.reject(error)
+  //   );
+  //   (async () => {
+  //     const token = localStorage.getItem('token');
+  //     if (token) {
+  //       try {
+  //         const result = await API.post('/verify');
+  //         setUser({ id: result.data.id, role: result.data.role });
+  //       } catch (_) {
+  //       } finally {
+  //         setIsInited(true);
+  //       }
+  //     }
+  //   })();
+  //   return () => {
+  //     API.interceptors.response.eject(responseInterceptor);
+  //     API.interceptors.request.eject(requestInterceptor);
+  //   };
+  // }, []);
+
+  return children;
+  // return loading ? <p>Loading...</p> : <>{children}</>;
 };

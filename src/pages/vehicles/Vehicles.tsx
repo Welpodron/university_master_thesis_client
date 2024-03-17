@@ -20,11 +20,21 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { IconPencil, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
-import { TModelField } from '@/constants';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/store/store';
+import {
+  addVehicle,
+  removeVehicle,
+  submit,
+  updateVehicle,
+} from '@/store/slices/storage';
 
 export const Vehicles = () => {
-  const [model, setModel] = useState<Record<string, TModelField>>({});
-  const [data, setData] = useState<TVehicle[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { connected, vehicles } = useSelector(
+    (state: RootState) => state.storage
+  );
 
   const addForm = useForm<{
     name: string;
@@ -62,25 +72,25 @@ export const Vehicles = () => {
       if (!name || !capacity) {
         return;
       }
-      setIsAddFormSubmitting(true);
 
-      (async () => {
-        try {
-          const res = await API.post<TVehicle>('/vehicles', {
-            name: name.trim(),
-            capacity,
-          });
+      if (connected) {
+        dispatch(submit({ type: 'ADD_VEHICLE', data: { name, capacity } }));
+      } else {
+        (async () => {
+          try {
+            const { data } = await API.post<TVehicle>('/vehicles', {
+              name: name.trim(),
+              capacity,
+            });
 
-          setData((data) => [...data, res.data]);
-          closeAddDrawer();
-        } catch (error) {
-          console.error(error);
-        } finally {
-          setIsAddFormSubmitting(false);
-        }
-      })();
+            dispatch(addVehicle({ data }));
+          } catch (error) {
+            console.error(error);
+          }
+        })();
+      }
     },
-    []
+    [connected, dispatch]
   );
 
   const handleEditFormSubmit = useCallback(
@@ -96,51 +106,50 @@ export const Vehicles = () => {
       if (!name || !capacity) {
         return;
       }
-      setIsEditFormSubmitting(true);
 
-      (async () => {
-        try {
-          const res = await API.put<TVehicle>(`/vehicles/${id}`, {
-            name: name.trim(),
-            capacity,
-          });
+      if (connected) {
+        dispatch(
+          submit({ type: 'UPDATE_VEHICLE', data: { id, name, capacity } })
+        );
+      } else {
+        (async () => {
+          try {
+            const { data } = await API.put<TVehicle>(`/vehicles/${id}`, {
+              name: name.trim(),
+              capacity,
+            });
 
-          setData((data) =>
-            data.map((row) =>
-              row.id === res.data.id
-                ? {
-                    ...res.data,
-                  }
-                : row
-            )
-          );
-
-          closeEditDrawer();
-        } catch (error) {
-          console.error(error);
-        } finally {
-          setIsEditFormSubmitting(false);
-        }
-      })();
+            dispatch(updateVehicle({ data }));
+          } catch (error) {
+            console.error(error);
+          }
+        })();
+      }
     },
-    []
+    [connected, dispatch]
   );
 
-  const handleDeleteSubmit = useCallback(({ ids }: { ids: number[] }) => {
-    if (Array.isArray(ids)) {
-      (async () => {
-        try {
-          await API.delete('/vehicles', {
-            data: { ids },
-          });
-          setData((data) => data.filter((row) => !ids.includes(row.id)));
-        } catch (error) {
-          console.error(error);
-        } finally {
+  const handleDeleteSubmit = useCallback(
+    ({ ids }: { ids: number[] }) => {
+      if (Array.isArray(ids)) {
+        if (connected) {
+          dispatch(submit({ type: 'DELETE_VEHICLE', data: ids }));
+        } else {
+          (async () => {
+            try {
+              await API.delete('/vehicles', {
+                data: { ids },
+              });
+              dispatch(removeVehicle({ data: ids }));
+            } catch (error) {
+              console.error(error);
+            }
+          })();
         }
-      })();
-    }
-  }, []);
+      }
+    },
+    [connected, dispatch]
+  );
 
   const openConfirmDeleteModal = ({ ids }: { ids: number[] }) =>
     modals.openConfirmModal({
@@ -167,47 +176,47 @@ export const Vehicles = () => {
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
       'Транспорт';
 
-    (async () => {
-      try {
-        const result = await API.get('/_vehiclesModel', {
-          signal: controllerModel.signal,
-        });
-
-        console.log(result.data);
-
-        setModel(result.data);
-      } catch (error) {
-        if (!controllerModel.signal?.aborted) {
-          console.error(error);
-        }
-      }
-
-      try {
-        const result = await API.get<TVehicle[]>('/vehicles', {
-          signal: controllerData.signal,
-        });
-
-        setData(result.data);
-      } catch (error) {
-        if (!controllerData.signal?.aborted) {
-          console.error(error);
-        }
-      }
-    })();
+    if (connected) {
+      dispatch(submit({ type: 'GET_VEHICLES' }));
+    } else {
+      (async () => {
+        // try {
+        //   const result = await API.get('/_vehiclesModel', {
+        //     signal: controllerModel.signal,
+        //   });
+        //   console.log(result.data);
+        //   setModel(result.data);
+        // } catch (error) {
+        //   if (!controllerModel.signal?.aborted) {
+        //     console.error(error);
+        //   }
+        // }
+        // try {
+        //   const result = await API.get<TVehicle[]>('/vehicles', {
+        //     signal: controllerData.signal,
+        //   });
+        //   setData(result.data);
+        // } catch (error) {
+        //   if (!controllerData.signal?.aborted) {
+        //     console.error(error);
+        //   }
+        // }
+      })();
+    }
 
     return () => {
       controllerData.abort();
       controllerModel.abort();
     };
-  }, []);
+  }, [connected, dispatch]);
 
   return (
     <>
       <Title>Транспорт</Title>
       <Tabler
         {...{
-          data,
-          model,
+          data: vehicles.data,
+          model: vehicles.model,
           isAddDrawerOpened,
           openAddDrawer,
           closeAddDrawer,
@@ -269,6 +278,10 @@ export const Vehicles = () => {
                   required={true}
                   {...addForm.getInputProps('capacity')}
                 />
+                <Text fz="xs" c="dimmed">
+                  <span style={{ color: 'red' }}>*</span> - поля, обязательные
+                  для заполнения
+                </Text>
                 <Button
                   disabled={isAddFormSubmitting}
                   loading={isAddFormSubmitting}
@@ -302,6 +315,10 @@ export const Vehicles = () => {
                   required={true}
                   {...editForm.getInputProps('capacity')}
                 />
+                <Text fz="xs" c="dimmed">
+                  <span style={{ color: 'red' }}>*</span> - поля, обязательные
+                  для заполнения
+                </Text>
                 <Button
                   loading={isEditFormSubmitting}
                   disabled={isEditFormSubmitting}

@@ -116,16 +116,16 @@ export type TTablerProps<T extends Record<string, any> & { id: number }> = {
   data: T[];
   model: Record<string, TModelField>;
 
-  editForm: ReactElement;
+  editForm?: ReactElement;
   addForm: ReactElement;
 
   isAddDrawerOpened: boolean;
   openAddDrawer: () => void;
   closeAddDrawer: () => void;
 
-  isEditDrawerOpened: boolean;
-  openEditDrawer: () => void;
-  closeEditDrawer: () => void;
+  isEditDrawerOpened?: boolean;
+  openEditDrawer?: () => void;
+  closeEditDrawer?: () => void;
 
   itemActions: (MenuItemProps & {
     name: string;
@@ -780,20 +780,24 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
           }}
         />
       </Paper>
-      <Drawer
-        offset={8}
-        position="right"
-        radius="md"
-        opened={isEditDrawerOpened}
-        title={
-          <Text fw={500} fz="lg">
-            Редактирование элемента
-          </Text>
-        }
-        onClose={closeEditDrawer}
-      >
-        {editForm}
-      </Drawer>
+      {editForm != null &&
+        isEditDrawerOpened != null &&
+        closeEditDrawer != null && (
+          <Drawer
+            offset={8}
+            position="right"
+            radius="md"
+            opened={isEditDrawerOpened}
+            title={
+              <Text fw={500} fz="lg">
+                Редактирование элемента
+              </Text>
+            }
+            onClose={closeEditDrawer}
+          >
+            {editForm}
+          </Drawer>
+        )}
       <Drawer
         offset={8}
         position="right"
