@@ -1,24 +1,27 @@
-import { useCallback, useEffect, useState } from 'react';
-
-type TJob = {
-  id: number;
-  date: Date;
-  completed: boolean;
-};
-
-import API from '@/api/API';
-import { Tabler } from '@/components/tabler/Tabler';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from '@mantine/form';
 import { Stack, Button, Text, Switch, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPencil, IconX } from '@tabler/icons-react';
+import { IconPencil, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { DatePickerInput } from '@mantine/dates';
-import { TModelField } from '@/constants';
+import { Tabler, TablerEditor } from '@/components/tabler';
+import { useDispatch, useSelector } from 'react-redux';
+import { TJob } from '@/constants';
+import { AppDispatch, RootState } from '@/redux/store';
+import {
+  RESTaddJob,
+  RESTeditJob,
+  RESTdeleteJobs,
+  RESTgetJobs,
+} from '@/redux/thunks/jobs';
 
 export const Jobs = () => {
-  const [model, setModel] = useState<Record<string, TModelField>>({});
-  const [data, setData] = useState<TJob[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { data, loading, model, error } = useSelector(
+    (state: RootState) => state.jobs
+  );
 
   const addForm = useForm<{
     date: Date | null;
@@ -40,36 +43,30 @@ export const Jobs = () => {
     },
   });
 
-  const [isAddFormSubmitting, setIsAddFormSubmitting] = useState(false);
-  const [isEditFormSubmitting, setIsEditFormSubmitting] = useState(false);
-
   const [isAddDrawerOpened, { open: openAddDrawer, close: closeAddDrawer }] =
     useDisclosure(false);
 
   const [isEditDrawerOpened, { open: openEditDrawer, close: closeEditDrawer }] =
     useDisclosure(false);
 
-  const handleAddFormSubmit = useCallback(({ date }: { date: Date | null }) => {
-    if (!date) {
-      return;
-    }
-    setIsAddFormSubmitting(true);
-
-    (async () => {
-      try {
-        const res = await API.post<TJob>('/jobs', {
-          date,
-        });
-
-        setData((data) => [...data, res.data]);
-        closeAddDrawer();
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsAddFormSubmitting(false);
+  const handleAddFormSubmit = useCallback(
+    ({ date }: { date: Date | null }) => {
+      if (!date) {
+        return;
       }
-    })();
-  }, []);
+
+      (async () => {
+        try {
+          await dispatch(RESTaddJob({ date }));
+          closeAddDrawer();
+          addForm.reset();
+        } catch (error) {
+          console.error(error);
+        }
+      })();
+    },
+    [dispatch]
+  );
 
   const handleEditFormSubmit = useCallback(
     ({
@@ -84,51 +81,39 @@ export const Jobs = () => {
       if (!date) {
         return;
       }
-      setIsEditFormSubmitting(true);
 
       (async () => {
         try {
-          const res = await API.put<TJob>(`/jobs/${id}`, {
-            date,
-            completed: completed === true,
-          });
-
-          setData((data) =>
-            data.map((row) =>
-              row.id === res.data.id
-                ? {
-                    ...res.data,
-                  }
-                : row
-            )
+          await dispatch(
+            RESTeditJob({
+              id,
+              date,
+              completed: completed === true,
+            })
           );
-
           closeEditDrawer();
         } catch (error) {
           console.error(error);
-        } finally {
-          setIsEditFormSubmitting(false);
         }
       })();
     },
-    []
+    [dispatch]
   );
 
-  const handleDeleteSubmit = useCallback(({ ids }: { ids: number[] }) => {
-    if (Array.isArray(ids)) {
-      (async () => {
-        try {
-          await API.delete('/jobs', {
-            data: { ids },
-          });
-          setData((data) => data.filter((row) => !ids.includes(row.id)));
-        } catch (error) {
-          console.error(error);
-        } finally {
-        }
-      })();
-    }
-  }, []);
+  const handleDeleteSubmit = useCallback(
+    ({ ids }: { ids: number[] }) => {
+      if (Array.isArray(ids)) {
+        (async () => {
+          try {
+            await dispatch(RESTdeleteJobs(ids));
+          } catch (error) {
+            console.error(error);
+          }
+        })();
+      }
+    },
+    [dispatch]
+  );
 
   const openConfirmDeleteModal = ({ ids }: { ids: number[] }) =>
     modals.openConfirmModal({
@@ -149,156 +134,155 @@ export const Jobs = () => {
     });
 
   useEffect(() => {
-    const controllerData = new AbortController();
-    const controllerModel = new AbortController();
-
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
-      'Агенты';
+      'Задачи';
 
     (async () => {
       try {
-        const result = await API.get('/_jobsModel', {
-          signal: controllerModel.signal,
-        });
-
-        console.log(result.data);
-
-        setModel(result.data);
+        dispatch(RESTgetJobs());
       } catch (error) {
-        if (!controllerModel.signal?.aborted) {
-          console.error(error);
-        }
-      }
-
-      try {
-        const result = await API.get<TJob[]>('/jobs', {
-          signal: controllerData.signal,
-        });
-
-        setData(result.data);
-      } catch (error) {
-        if (!controllerData.signal?.aborted) {
-          console.error(error);
-        }
+        console.log(error);
       }
     })();
+  }, [dispatch]);
 
-    return () => {
-      controllerData.abort();
-      controllerModel.abort();
-    };
-  }, []);
+  const tableActions = useMemo(
+    () => [
+      {
+        name: 'Добавить',
+        leftSection: <IconPlus size={20} />,
+        color: 'blue',
+        onClick: () => {
+          openAddDrawer();
+        },
+      },
+    ],
+    []
+  );
+
+  const groupActions = useMemo(
+    () => [
+      {
+        name: 'Удалить',
+        color: 'red',
+        leftSection: <IconX size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            openConfirmDeleteModal({ ids: selectedIds });
+          }
+        },
+      },
+    ],
+    []
+  );
+
+  const itemActions = useMemo(
+    () => [
+      {
+        name: 'Изменить',
+        color: 'blue',
+        leftSection: <IconPencil size={20} />,
+        onClick: (item: TJob) => {
+          editForm.setValues({
+            id: item.id,
+            date: new Date(item.date),
+            completed: item.completed,
+          });
+          openEditDrawer();
+        },
+      },
+      {
+        name: 'Удалить',
+        color: 'red',
+        leftSection: <IconX size={20} />,
+        onClick: (item: TJob) => {
+          openConfirmDeleteModal({ ids: [item.id] });
+        },
+      },
+    ],
+    []
+  );
 
   return (
     <>
       <Title>Агенты</Title>
       <Tabler
         {...{
+          loading,
           data,
           model,
-          isAddDrawerOpened,
-          openAddDrawer,
-          closeAddDrawer,
-          isEditDrawerOpened,
-          openEditDrawer,
-          closeEditDrawer,
-          groupActions: [
-            {
-              name: 'Удалить',
-              color: 'red',
-              leftSection: <IconX size={20} />,
-              onClick: (selectedIds) => {
-                if (Array.isArray(selectedIds) && selectedIds.length > 0) {
-                  openConfirmDeleteModal({ ids: selectedIds });
-                }
-              },
-            },
-          ],
-          itemActions: [
-            {
-              name: 'Изменить',
-              color: 'blue',
-              leftSection: <IconPencil size={20} />,
-              onClick: (item) => {
-                editForm.setValues({
-                  id: item.id,
-                  date: new Date(item.date),
-                  completed: item.completed,
-                });
-                openEditDrawer();
-              },
-            },
-            {
-              name: 'Удалить',
-              color: 'red',
-              leftSection: <IconX size={20} />,
-              onClick: (item) => {
-                openConfirmDeleteModal({ ids: [item.id] });
-              },
-            },
-          ],
-          addForm: (
-            <form onSubmit={addForm.onSubmit(handleAddFormSubmit)}>
-              <Stack>
-                <DatePickerInput
-                  label="Дата агента"
-                  description="Дата когда будет выполнен агент"
-                  placeholder="Выберите дату ручного выполнения агента"
-                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
-                  required={true}
-                  {...addForm.getInputProps('date')}
-                />
-                <Text fz="xs" c="dimmed">
-                  <span style={{ color: 'red' }}>*</span> - поля, обязательные
-                  для заполнения
-                </Text>
-                <Button
-                  disabled={isAddFormSubmitting}
-                  loading={isAddFormSubmitting}
-                  mt="auto"
-                  w="100%"
-                  type="submit"
-                >
-                  Добавить
-                </Button>
-              </Stack>
-            </form>
-          ),
-          onDelete: () => {},
-          editForm: (
-            <form onSubmit={editForm.onSubmit(handleEditFormSubmit)}>
-              <Stack>
-                <DatePickerInput
-                  label="Дата агента"
-                  description="Дата когда будет выполнен агент"
-                  placeholder="Выберите дату ручного выполнения агента"
-                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
-                  required={true}
-                  {...editForm.getInputProps('date')}
-                />
-                <Switch
-                  label="Агент выполнен"
-                  labelPosition="left"
-                  {...editForm.getInputProps('completed', { type: 'checkbox' })}
-                />
-                <Text fz="xs" c="dimmed">
-                  <span style={{ color: 'red' }}>*</span> - поля, обязательные
-                  для заполнения
-                </Text>
-                <Button
-                  loading={isEditFormSubmitting}
-                  disabled={isEditFormSubmitting}
-                  type="submit"
-                  mt="auto"
-                  w="100%"
-                >
-                  Сохранить
-                </Button>
-              </Stack>
-            </form>
-          ),
+          tableActions,
+          groupActions,
+          itemActions,
         }}
       />
+      <TablerEditor
+        type="add"
+        opened={isAddDrawerOpened}
+        onClose={closeAddDrawer}
+      >
+        <form onSubmit={addForm.onSubmit(handleAddFormSubmit)}>
+          <Stack>
+            <DatePickerInput
+              label="Дата агента"
+              description="Дата когда будет выполнен агент"
+              placeholder="Выберите дату ручного выполнения агента"
+              minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+              required={true}
+              {...addForm.getInputProps('date')}
+            />
+            <Text fz="xs" c="dimmed">
+              <span style={{ color: 'red' }}>*</span> - поля, обязательные для
+              заполнения
+            </Text>
+            <Button
+              disabled={loading}
+              loading={loading}
+              mt="auto"
+              w="100%"
+              type="submit"
+            >
+              Добавить
+            </Button>
+          </Stack>
+        </form>
+      </TablerEditor>
+      <TablerEditor
+        type="edit"
+        opened={isEditDrawerOpened}
+        onClose={closeEditDrawer}
+      >
+        <form onSubmit={editForm.onSubmit(handleEditFormSubmit)}>
+          <Stack>
+            <DatePickerInput
+              label="Дата агента"
+              description="Дата когда будет выполнен агент"
+              placeholder="Выберите дату ручного выполнения агента"
+              minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+              required={true}
+              {...editForm.getInputProps('date')}
+            />
+            <Switch
+              label="Агент выполнен"
+              labelPosition="left"
+              {...editForm.getInputProps('completed', { type: 'checkbox' })}
+            />
+            <Text fz="xs" c="dimmed">
+              <span style={{ color: 'red' }}>*</span> - поля, обязательные для
+              заполнения
+            </Text>
+            <Button
+              loading={loading}
+              disabled={loading}
+              type="submit"
+              mt="auto"
+              w="100%"
+            >
+              Сохранить
+            </Button>
+          </Stack>
+        </form>
+      </TablerEditor>
     </>
   );
 };

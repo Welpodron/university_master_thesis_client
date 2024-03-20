@@ -14,7 +14,6 @@ import { Protected } from '@/pages/protected';
 import { Root } from '@/pages/root';
 import { Errorable } from '@/pages/errorable';
 import { Tasks } from '@/pages/tasks';
-import { AuthProvider } from '@/providers/auth';
 import { Vehicles } from '@/pages/vehicles';
 import { Jobs } from '@/pages/jobs';
 import { DatesProvider } from '@mantine/dates';
@@ -22,41 +21,76 @@ import { Users } from '@/pages/users';
 import { Personal } from '@/pages/personal';
 import { Assignments } from '@/pages/assignments';
 
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { store } from '@/store/store';
-import { ReactElement, memo, useEffect, useLayoutEffect, useRef } from 'react';
-import { AppDispatch, RootState } from '@/store/store';
-import { authVerify } from '@/store/thunks/auth';
-import { Verifier } from '../verifier';
-import { Storage } from '../storage';
+import { Provider } from 'react-redux';
+import { Verifier } from '@/components/verifier';
+import { store } from '@/redux/store';
+import { Routing } from '@/pages/routing';
 
 export const App = () => {
   return (
     <Provider store={store}>
       <DatesProvider settings={{ locale: 'ru' }}>
-        <Verifier>
-          <Storage>
-            <BrowserRouter>
-              <MantineProvider>
-                <ModalsProvider>
-                  <Routes>
-                    <Route path="/" element={<Root />}>
-                      <Route
-                        path="vehicles"
-                        element={
-                          <Protected>
-                            <Vehicles />
-                          </Protected>
-                        }
-                      />
-                    </Route>
-                    <Route path="/login" element={<Login />} />
-                  </Routes>
-                </ModalsProvider>
-              </MantineProvider>
-            </BrowserRouter>
-          </Storage>
-        </Verifier>
+        <MantineProvider>
+          <ModalsProvider>
+            <Verifier>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Root />}>
+                    <Route
+                      path="tasks"
+                      element={
+                        <Protected>
+                          <Tasks />
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="vehicles"
+                      element={
+                        <Protected>
+                          <Vehicles />
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="jobs"
+                      element={
+                        <Protected>
+                          <Jobs />
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="users"
+                      element={
+                        <Protected>
+                          <Users />
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="assignments"
+                      element={
+                        <Protected>
+                          <Assignments />
+                        </Protected>
+                      }
+                    />
+                  </Route>
+                  <Route
+                    path="routing"
+                    element={
+                      <Protected>
+                        <Routing />
+                      </Protected>
+                    }
+                  />
+                  <Route path="/login" element={<Login />} />
+                </Routes>
+              </BrowserRouter>
+            </Verifier>
+          </ModalsProvider>
+        </MantineProvider>
       </DatesProvider>
     </Provider>
   );

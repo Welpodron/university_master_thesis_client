@@ -21,6 +21,7 @@ import {
   IconMaximize,
   IconMoon,
   IconRobot,
+  IconRoute,
   IconSun,
   IconTruck,
   IconUser,
@@ -95,6 +96,16 @@ export const Root = () => {
           <Tooltip label="Заявки">
             <ActionIcon component={Link} to="/tasks" variant="light" size="xl">
               <IconClipboardList stroke={1.5} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Маршрутизация">
+            <ActionIcon
+              component={Link}
+              to="/routing"
+              variant="light"
+              size="xl"
+            >
+              <IconRoute stroke={1.5} />
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Транспорт">

@@ -1,5 +1,6 @@
-import { AppDispatch, RootState } from '@/store/store';
-import { authVerify } from '@/store/thunks/auth';
+import { AppDispatch, RootState } from '@/redux/store';
+import { authVerify } from '@/redux/thunks/auth';
+import { Center, Loader } from '@mantine/core';
 import { memo, ReactElement, useRef, useLayoutEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -24,5 +25,11 @@ export const Verifier = memo(({ children }: { children: ReactElement }) => {
     }
   }, []);
 
-  return verifying ? <>Loading...</> : children;
+  return verifying ? (
+    <Center h="100vh" w="100%">
+      <Loader />
+    </Center>
+  ) : (
+    children
+  );
 });

@@ -1,4 +1,4 @@
-import { ReactElement, memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import dayjs from 'dayjs';
 import customParserFormat from 'dayjs/plugin/customParseFormat';
@@ -27,13 +27,13 @@ import {
   TextInput,
   Select,
   NumberInput,
+  LoadingOverlay,
 } from '@mantine/core';
 import {
   IconSettings,
   IconArrowNarrowUp,
   IconArrowNarrowDown,
   IconSelector,
-  IconPlus,
   IconMenu2,
   IconCalendar,
   IconFilter,
@@ -115,17 +115,12 @@ const FormattedValue = memo(({ children }: { children: any }) => {
 export type TTablerProps<T extends Record<string, any> & { id: number }> = {
   data: T[];
   model: Record<string, TModelField>;
+  loading: boolean;
 
-  editForm?: ReactElement;
-  addForm: ReactElement;
-
-  isAddDrawerOpened: boolean;
-  openAddDrawer: () => void;
-  closeAddDrawer: () => void;
-
-  isEditDrawerOpened?: boolean;
-  openEditDrawer?: () => void;
-  closeEditDrawer?: () => void;
+  tableActions: (MenuItemProps & {
+    name: string;
+    onClick: () => void;
+  })[];
 
   itemActions: (MenuItemProps & {
     name: string;
@@ -138,17 +133,11 @@ export type TTablerProps<T extends Record<string, any> & { id: number }> = {
   })[];
 };
 
-export const Tabler = <T extends Record<string, any> & { id: number }>({
+const _Tabler = <T extends Record<string, any> & { id: number }>({
   data,
   model,
-  editForm,
-  addForm,
-  isAddDrawerOpened,
-  openAddDrawer,
-  closeAddDrawer,
-  isEditDrawerOpened,
-  openEditDrawer,
-  closeEditDrawer,
+  loading,
+  tableActions,
   itemActions,
   groupActions,
 }: TTablerProps<T>) => {
@@ -239,6 +228,11 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
   return (
     <>
       <Paper withBorder mt="xl" pos="relative">
+        <LoadingOverlay
+          visible={loading}
+          zIndex={5}
+          overlayProps={{ radius: 'sm', blur: 4 }}
+        />
         <Box
           style={{
             borderBottom: `1px solid ${
@@ -377,21 +371,7 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
                         }
                       }
 
-                      return (
-                        <TextInput
-                          label={translateColumn(key)}
-                          key={key}
-                          value={value ?? ''}
-                          onChange={(event) =>
-                            setFilterForm((filter) => {
-                              return {
-                                ...filter,
-                                [key]: event.currentTarget.value,
-                              };
-                            })
-                          }
-                        />
-                      );
+                      return <></>;
                     })}
                     <SimpleGrid cols={{ base: 1, sm: 2 }}>
                       <Button
@@ -439,20 +419,25 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
                 </Drawer>
               </>
             )}
-            <Menu>
-              <Menu.Target>
-                <Button ml="auto">Общие действия</Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  onClick={openAddDrawer}
-                  color="blue"
-                  leftSection={<IconPlus size={20} />}
-                >
-                  Добавить
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+            {tableActions.length > 0 && (
+              <Menu>
+                <Menu.Target>
+                  <Button ml="auto">Общие действия</Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {tableActions.map((action, index) => (
+                    <Menu.Item
+                      key={index}
+                      onClick={action.onClick}
+                      color={action.color}
+                      leftSection={action.leftSection}
+                    >
+                      {action.name}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+            )}
           </Group>
         </Box>
         {paginatedData.length ? (
@@ -481,28 +466,30 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
                       }}
                     >
                       <Group p={0} gap={10}>
-                        <Checkbox
-                          indeterminate={isSelectedRowsIndeterminate}
-                          checked={isSelectedRowsChecked}
-                          onChange={(event) => {
-                            if (event.currentTarget.checked) {
-                              setSelectedRows(
-                                Object.fromEntries(
-                                  paginatedData.map((row) => [row.id, true])
-                                )
-                              );
-                            } else {
-                              setSelectedRows((selectedRows) =>
-                                Object.fromEntries(
-                                  Object.keys(selectedRows).map((key) => [
-                                    key,
-                                    false,
-                                  ])
-                                )
-                              );
-                            }
-                          }}
-                        />
+                        {groupActions.length > 0 && (
+                          <Checkbox
+                            indeterminate={isSelectedRowsIndeterminate}
+                            checked={isSelectedRowsChecked}
+                            onChange={(event) => {
+                              if (event.currentTarget.checked) {
+                                setSelectedRows(
+                                  Object.fromEntries(
+                                    paginatedData.map((row) => [row.id, true])
+                                  )
+                                );
+                              } else {
+                                setSelectedRows((selectedRows) =>
+                                  Object.fromEntries(
+                                    Object.keys(selectedRows).map((key) => [
+                                      key,
+                                      false,
+                                    ])
+                                  )
+                                );
+                              }
+                            }}
+                          />
+                        )}
                         <ActionIcon
                           variant="light"
                           onClick={openShownColumnsDrawer}
@@ -658,36 +645,40 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
                         }}
                       >
                         <Group p={0} gap={10}>
-                          <Checkbox
-                            value={item.id}
-                            checked={selectedRows[item.id] ?? false}
-                            onChange={(event) =>
-                              setSelectedRows((selectedRows) => ({
-                                ...selectedRows,
-                                [event.currentTarget.value]:
-                                  event.currentTarget.checked,
-                              }))
-                            }
-                          />
-                          <Menu>
-                            <Menu.Target>
-                              <ActionIcon variant="light" size="lg">
-                                <IconMenu2 />
-                              </ActionIcon>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                              {itemActions.map((action, index) => (
-                                <Menu.Item
-                                  key={index}
-                                  onClick={() => action.onClick(item)}
-                                  color={action.color}
-                                  leftSection={action.leftSection}
-                                >
-                                  {action.name}
-                                </Menu.Item>
-                              ))}
-                            </Menu.Dropdown>
-                          </Menu>
+                          {groupActions.length > 0 && (
+                            <Checkbox
+                              value={item.id}
+                              checked={selectedRows[item.id] ?? false}
+                              onChange={(event) =>
+                                setSelectedRows((selectedRows) => ({
+                                  ...selectedRows,
+                                  [event.currentTarget.value]:
+                                    event.currentTarget.checked,
+                                }))
+                              }
+                            />
+                          )}
+                          {itemActions.length > 0 && (
+                            <Menu>
+                              <Menu.Target>
+                                <ActionIcon variant="light" size="lg">
+                                  <IconMenu2 />
+                                </ActionIcon>
+                              </Menu.Target>
+                              <Menu.Dropdown>
+                                {itemActions.map((action, index) => (
+                                  <Menu.Item
+                                    key={index}
+                                    onClick={() => action.onClick(item)}
+                                    color={action.color}
+                                    leftSection={action.leftSection}
+                                  >
+                                    {action.name}
+                                  </Menu.Item>
+                                ))}
+                              </Menu.Dropdown>
+                            </Menu>
+                          )}
                         </Group>
                       </Table.Td>
                       {Object.entries(item)
@@ -725,38 +716,42 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
             }}
           >
             <Group p={10} gap={10}>
-              <Text lh={1} fz="sm">
-                Выбрано всего: {selectedRowsNumber}
-              </Text>
-              <Menu>
-                <Menu.Target>
-                  <Button disabled={!selectedRowsNumber} ml="auto">
-                    Групповые действия
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {groupActions.map((action, index) => (
-                    <Menu.Item
-                      key={index}
-                      onClick={() =>
-                        action.onClick(
-                          Object.entries(selectedRows).reduce(
-                            (accumulator, [key, value]) =>
-                              value
-                                ? [...accumulator, parseInt(key)]
-                                : accumulator,
-                            [] as number[]
-                          )
-                        )
-                      }
-                      color={action.color}
-                      leftSection={action.leftSection}
-                    >
-                      {action.name}
-                    </Menu.Item>
-                  ))}
-                </Menu.Dropdown>
-              </Menu>
+              {groupActions.length > 0 && (
+                <>
+                  <Text lh={1} fz="sm">
+                    Выбрано всего: {selectedRowsNumber}
+                  </Text>
+                  <Menu>
+                    <Menu.Target>
+                      <Button disabled={!selectedRowsNumber} ml="auto">
+                        Групповые действия
+                      </Button>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {groupActions.map((action, index) => (
+                        <Menu.Item
+                          key={index}
+                          onClick={() =>
+                            action.onClick(
+                              Object.entries(selectedRows).reduce(
+                                (accumulator, [key, value]) =>
+                                  value
+                                    ? [...accumulator, parseInt(key)]
+                                    : accumulator,
+                                [] as number[]
+                              )
+                            )
+                          }
+                          color={action.color}
+                          leftSection={action.leftSection}
+                        >
+                          {action.name}
+                        </Menu.Item>
+                      ))}
+                    </Menu.Dropdown>
+                  </Menu>
+                </>
+              )}
             </Group>
           </Box>
         ) : (
@@ -780,38 +775,8 @@ export const Tabler = <T extends Record<string, any> & { id: number }>({
           }}
         />
       </Paper>
-      {editForm != null &&
-        isEditDrawerOpened != null &&
-        closeEditDrawer != null && (
-          <Drawer
-            offset={8}
-            position="right"
-            radius="md"
-            opened={isEditDrawerOpened}
-            title={
-              <Text fw={500} fz="lg">
-                Редактирование элемента
-              </Text>
-            }
-            onClose={closeEditDrawer}
-          >
-            {editForm}
-          </Drawer>
-        )}
-      <Drawer
-        offset={8}
-        position="right"
-        radius="md"
-        opened={isAddDrawerOpened}
-        title={
-          <Text fw={500} fz="lg">
-            Добавление элемента
-          </Text>
-        }
-        onClose={closeAddDrawer}
-      >
-        {addForm}
-      </Drawer>
     </>
   );
 };
+
+export const Tabler = memo(_Tabler) as typeof _Tabler;

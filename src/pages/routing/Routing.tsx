@@ -6,7 +6,7 @@ import { AppDispatch, RootState } from '@/redux/store';
 import { useDispatch, useSelector } from 'react-redux';
 import { RESTgetAssignments } from '@/redux/thunks/assignments';
 
-export const Assignments = () => {
+export const Routing = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const { data, model, loading, error } = useSelector(
@@ -15,7 +15,7 @@ export const Assignments = () => {
 
   useEffect(() => {
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
-      'Назначения';
+      'Маршрутизация';
 
     (async () => {
       try {

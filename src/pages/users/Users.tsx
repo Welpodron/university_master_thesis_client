@@ -1,12 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
-type TUser = {
-  id: number;
-  name: string;
-};
-
-import API from '@/api/API';
-import { Tabler } from '@/components/tabler/Tabler';
 import { useForm } from '@mantine/form';
 import {
   Stack,
@@ -17,13 +10,24 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPencil, IconX } from '@tabler/icons-react';
+import { IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
-import { TModelField } from '@/constants';
+import { Tabler, TablerEditor } from '@/components/tabler';
+import { TUser } from '@/constants';
+import { AppDispatch, RootState } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  RESTaddUser,
+  RESTdeleteUsers,
+  RESTgetUsers,
+} from '@/redux/thunks/users';
 
 export const Users = () => {
-  const [model, setModel] = useState<Record<string, TModelField>>({});
-  const [data, setData] = useState<TUser[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { data, model, loading, error } = useSelector(
+    (state: RootState) => state.users
+  );
 
   const addForm = useForm<{
     name: string;
@@ -35,8 +39,6 @@ export const Users = () => {
     },
   });
 
-  const [isAddFormSubmitting, setIsAddFormSubmitting] = useState(false);
-
   const [isAddDrawerOpened, { open: openAddDrawer, close: closeAddDrawer }] =
     useDisclosure(false);
 
@@ -45,21 +47,19 @@ export const Users = () => {
       if (!name || !email) {
         return;
       }
-      setIsAddFormSubmitting(true);
 
       (async () => {
         try {
-          const res = await API.post<TUser>('/users', {
-            name: name.trim(),
-            email: email.trim(),
-          });
-
-          setData((data) => [...data, res.data]);
+          await dispatch(
+            RESTaddUser({
+              name,
+              email,
+            })
+          );
           closeAddDrawer();
+          addForm.reset();
         } catch (error) {
           console.error(error);
-        } finally {
-          setIsAddFormSubmitting(false);
         }
       })();
     },
@@ -70,13 +70,9 @@ export const Users = () => {
     if (Array.isArray(ids)) {
       (async () => {
         try {
-          await API.delete('/users', {
-            data: { ids },
-          });
-          setData((data) => data.filter((row) => !ids.includes(row.id)));
+          await dispatch(RESTdeleteUsers(ids));
         } catch (error) {
           console.error(error);
-        } finally {
         }
       })();
     }
@@ -101,112 +97,111 @@ export const Users = () => {
     });
 
   useEffect(() => {
-    const controllerData = new AbortController();
-    const controllerModel = new AbortController();
-
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
       'Сотрудники';
 
     (async () => {
       try {
-        const result = await API.get('/_usersModel', {
-          signal: controllerModel.signal,
-        });
-
-        console.log(result.data);
-
-        setModel(result.data);
+        dispatch(RESTgetUsers());
       } catch (error) {
-        if (!controllerModel.signal?.aborted) {
-          console.error(error);
-        }
-      }
-
-      try {
-        const result = await API.get<TUser[]>('/users', {
-          signal: controllerData.signal,
-        });
-
-        setData(result.data);
-      } catch (error) {
-        if (!controllerData.signal?.aborted) {
-          console.error(error);
-        }
+        console.log(error);
       }
     })();
+  }, [dispatch]);
 
-    return () => {
-      controllerData.abort();
-      controllerModel.abort();
-    };
-  }, []);
+  const tableActions = useMemo(
+    () => [
+      {
+        name: 'Добавить',
+        leftSection: <IconPlus size={20} />,
+        color: 'blue',
+        onClick: () => {
+          openAddDrawer();
+        },
+      },
+    ],
+    []
+  );
+
+  const groupActions = useMemo(
+    () => [
+      {
+        name: 'Удалить',
+        color: 'red',
+        leftSection: <IconX size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            openConfirmDeleteModal({ ids: selectedIds });
+          }
+        },
+      },
+    ],
+    []
+  );
+
+  const itemActions = useMemo(
+    () => [
+      {
+        name: 'Удалить',
+        color: 'red',
+        leftSection: <IconX size={20} />,
+        onClick: (item: TUser) => {
+          openConfirmDeleteModal({ ids: [item.id] });
+        },
+      },
+    ],
+    []
+  );
 
   return (
     <>
       <Title>Сотрудники</Title>
       <Tabler
         {...{
+          loading,
           data,
           model,
-          isAddDrawerOpened,
-          openAddDrawer,
-          closeAddDrawer,
-          groupActions: [
-            {
-              name: 'Удалить',
-              color: 'red',
-              leftSection: <IconX size={20} />,
-              onClick: (selectedIds) => {
-                if (Array.isArray(selectedIds) && selectedIds.length > 0) {
-                  openConfirmDeleteModal({ ids: selectedIds });
-                }
-              },
-            },
-          ],
-          itemActions: [
-            {
-              name: 'Удалить',
-              color: 'red',
-              leftSection: <IconX size={20} />,
-              onClick: (item) => {
-                openConfirmDeleteModal({ ids: [item.id] });
-              },
-            },
-          ],
-          addForm: (
-            <form onSubmit={addForm.onSubmit(handleAddFormSubmit)}>
-              <Stack>
-                <TextInput
-                  label="Название"
-                  description="Название транспорта"
-                  placeholder="Волга"
-                  min={1}
-                  required={true}
-                  {...addForm.getInputProps('name')}
-                />
-                <NumberInput
-                  label="Вместимость"
-                  description="Вместимость транспорта"
-                  placeholder="1"
-                  allowDecimal={false}
-                  min={1}
-                  required={true}
-                  {...addForm.getInputProps('capacity')}
-                />
-                <Button
-                  disabled={isAddFormSubmitting}
-                  loading={isAddFormSubmitting}
-                  mt="auto"
-                  w="100%"
-                  type="submit"
-                >
-                  Добавить
-                </Button>
-              </Stack>
-            </form>
-          ),
+          tableActions,
+          groupActions,
+          itemActions,
         }}
       />
+      <TablerEditor
+        type="add"
+        opened={isAddDrawerOpened}
+        onClose={closeAddDrawer}
+      >
+        <form onSubmit={addForm.onSubmit(handleAddFormSubmit)}>
+          <Stack>
+            <TextInput
+              label="Имя"
+              description="Имя пользователя"
+              placeholder="Алексей"
+              min={1}
+              required={true}
+              {...addForm.getInputProps('name')}
+            />
+            <TextInput
+              label="Email"
+              description="Email пользователя"
+              placeholder="email@example.com"
+              min={1}
+              type="email"
+              required={true}
+              {...addForm.getInputProps('email')}
+            />
+            <Button
+              disabled={loading}
+              loading={loading}
+              mt="auto"
+              w="100%"
+              type="submit"
+            >
+              Добавить
+            </Button>
+          </Stack>
+        </form>
+      </TablerEditor>
     </>
   );
 };

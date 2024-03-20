@@ -11,10 +11,10 @@ import { useForm } from '@mantine/form';
 import { useCallback } from 'react';
 
 import { useSelector, useDispatch } from 'react-redux';
-import { AppDispatch, RootState } from '@/store/store';
-import { authLogin } from '@/store/thunks/auth';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { RootState, AppDispatch } from '@/redux/store';
+import { authLogin } from '@/redux/thunks/auth';
 
 export const Login = () => {
   const { loading, error } = useSelector((state: RootState) => state.auth);

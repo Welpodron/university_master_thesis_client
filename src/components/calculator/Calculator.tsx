@@ -2,7 +2,7 @@ import { Box, Stack, Text } from '@mantine/core';
 import { memo, useEffect, useRef, useState } from 'react';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 
-import API from '../../api/API';
+import API from '../../api';
 
 type Route = {
   longitude: number | null;
