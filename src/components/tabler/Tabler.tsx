@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { Fragment, memo, useEffect, useState } from 'react';
 
 import dayjs from 'dayjs';
 import customParserFormat from 'dayjs/plugin/customParseFormat';
@@ -43,6 +43,14 @@ import { TablerPagination } from './TablerPagination';
 import { useFilter } from './hooks/useFilter';
 import { TModelField } from '@/constants';
 import { DatePickerInput } from '@mantine/dates';
+import { modals } from '@mantine/modals';
+import {
+  MapContainer,
+  Marker,
+  TileLayer,
+  Polyline,
+  FeatureGroup,
+} from 'react-leaflet';
 
 dayjs.extend(customParserFormat);
 
@@ -69,48 +77,150 @@ const translateColumn = (column: string) => {
       return 'дата';
     case 'startedAt':
       return 'начат (дата)';
+    case 'distance':
+      return 'дистанция';
+    case 'duration':
+      return 'длительность';
+    case 'pathCoords':
+      return 'маршрут';
+    case 'endCoords':
+      return 'конец';
+    case 'startCoords':
+      return 'начало';
+    case 'manual':
+      return 'ручной';
     default:
       return column;
   }
 };
 
-const FormattedValue = memo(({ children }: { children: any }) => {
-  if (children == null) {
-    return '';
-  }
+const FormattedValue = memo(
+  ({
+    children,
+    column,
+    field,
+  }: {
+    children: any;
+    column: string;
+    field: TModelField;
+  }) => {
+    if (children == null) {
+      return '';
+    }
 
-  if (typeof children === 'string') {
-    if (dayjs(children.replace(/T.*Z/g, ''), 'YYYY-MM-DD', true).isValid()) {
+    if (typeof children === 'string') {
+      if (dayjs(children.replace(/T.*Z/g, ''), 'YYYY-MM-DD', true).isValid()) {
+        return (
+          <Badge
+            variant="light"
+            color="gray"
+            rightSection={<IconCalendar size={16} />}
+          >
+            {dayjs(children).format('DD.MM.YYYY')}
+          </Badge>
+        );
+      }
+    }
+
+    if (children === false) {
       return (
-        <Badge
-          variant="light"
-          color="gray"
-          rightSection={<IconCalendar size={16} />}
-        >
-          {dayjs(children).format('DD.MM.YYYY')}
+        <Badge variant="light" color="red">
+          Нет
         </Badge>
       );
     }
-  }
 
-  if (children === false) {
-    return (
-      <Badge variant="light" color="red">
-        Нет
-      </Badge>
-    );
-  }
+    if (children === true) {
+      return (
+        <Badge variant="light" color="green">
+          Да
+        </Badge>
+      );
+    }
 
-  if (children === true) {
-    return (
-      <Badge variant="light" color="green">
-        Да
-      </Badge>
-    );
-  }
+    if (column === 'pathCoords') {
+      const path = (JSON.parse(children) as any[]).map((path) =>
+        path.toReversed()
+      ) as any[];
+      return (
+        <Button
+          size="xs"
+          onClick={() => {
+            modals.open({
+              size: 'xl',
+              centered: true,
+              title: (
+                <>
+                  [{path[0].join(',')}] -&gt; [{path[path.length - 1].join(',')}
+                  ]
+                </>
+              ),
+              children: (
+                <Box
+                  h={500}
+                  style={{
+                    borderRadius: '5px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <MapContainer center={path[0]} zoom={12}>
+                    <FeatureGroup>
+                      <Marker position={path[0]} />
+                      <Marker position={path[path.length - 1]} />
+                      <Polyline positions={path} color="red" />
+                    </FeatureGroup>
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                  </MapContainer>
+                </Box>
+              ),
+            });
+          }}
+        >
+          Показать на карте
+        </Button>
+      );
+    }
 
-  return children.toString();
-});
+    if (column === 'endCoords' || column === 'startCoords') {
+      return (
+        <Button
+          size="xs"
+          onClick={() => {
+            modals.open({
+              size: 'xl',
+              centered: true,
+              title: children,
+              children: (
+                <Box
+                  h={300}
+                  style={{
+                    borderRadius: '5px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <MapContainer center={JSON.parse(children)} zoom={16}>
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <Marker position={JSON.parse(children)} />
+                  </MapContainer>
+                </Box>
+              ),
+            });
+          }}
+        >
+          Показать на карте
+        </Button>
+      );
+    }
+
+    return children.toString();
+  }
+);
 
 export type TTablerProps<T extends Record<string, any> & { id: number }> = {
   data: T[];
@@ -371,7 +481,7 @@ const _Tabler = <T extends Record<string, any> & { id: number }>({
                         }
                       }
 
-                      return <></>;
+                      return <Fragment key={key}></Fragment>;
                     })}
                     <SimpleGrid cols={{ base: 1, sm: 2 }}>
                       <Button
@@ -695,7 +805,9 @@ const _Tabler = <T extends Record<string, any> & { id: number }>({
                             }}
                             key={`${item.id.toString()}_${i}`}
                           >
-                            <FormattedValue>{value}</FormattedValue>
+                            <FormattedValue column={key} field={model[key]}>
+                              {value}
+                            </FormattedValue>
                           </Table.Td>
                         ))}
                     </Table.Tr>

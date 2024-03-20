@@ -21,13 +21,15 @@ import {
   RESTdeleteUsers,
   RESTgetUsers,
 } from '@/redux/thunks/users';
+import { useGetUsersQuery } from '@/redux/services/api';
 
 export const Users = () => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const { data, model, loading, error } = useSelector(
-    (state: RootState) => state.users
-  );
+  // const { data, model, loading, error } = useSelector(
+  //   (state: RootState) => state.users
+  // );
+  const { data, isLoading: loading, error } = useGetUsersQuery(undefined);
 
   const addForm = useForm<{
     name: string;
@@ -159,8 +161,8 @@ export const Users = () => {
       <Tabler
         {...{
           loading,
-          data,
-          model,
+          data: (data?.data as any) ?? [],
+          model: data?.model ?? {},
           tableActions,
           groupActions,
           itemActions,

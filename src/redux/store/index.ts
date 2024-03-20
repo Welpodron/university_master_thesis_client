@@ -8,6 +8,7 @@ import usersReducer from '../slices/users';
 import assignmentsReducer from '../slices/assignments';
 // import storageReducer from '../slices/storage';
 // import { socketMiddleware } from '../middlewares/storage';
+import { api } from '../services/api';
 
 export const store = configureStore({
   reducer: {
@@ -15,10 +16,13 @@ export const store = configureStore({
     tasks: taskReducer,
     jobs: jobsReducer,
     vehicles: vehiclesReducer,
-    users: usersReducer,
+    // users: usersReducer,
     assignments: assignmentsReducer,
+    [api.reducerPath]: api.reducer,
     // storage: storageReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(api.middleware),
   // middleware: (getDefaultMiddleware) =>
   //   getDefaultMiddleware().concat(socketMiddleware()),
 });

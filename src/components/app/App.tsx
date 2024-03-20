@@ -76,15 +76,15 @@ export const App = () => {
                         </Protected>
                       }
                     />
+                    <Route
+                      path="routing"
+                      element={
+                        <Protected>
+                          <Routing />
+                        </Protected>
+                      }
+                    />
                   </Route>
-                  <Route
-                    path="routing"
-                    element={
-                      <Protected>
-                        <Routing />
-                      </Protected>
-                    }
-                  />
                   <Route path="/login" element={<Login />} />
                 </Routes>
               </BrowserRouter>
