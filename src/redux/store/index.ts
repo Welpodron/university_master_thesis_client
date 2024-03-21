@@ -15,7 +15,7 @@ export const store = configureStore({
     auth: authReducer,
     tasks: taskReducer,
     jobs: jobsReducer,
-    vehicles: vehiclesReducer,
+    // vehicles: vehiclesReducer,
     // users: usersReducer,
     assignments: assignmentsReducer,
     [api.reducerPath]: api.reducer,

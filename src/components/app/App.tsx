@@ -25,6 +25,7 @@ import { Provider } from 'react-redux';
 import { Verifier } from '@/components/verifier';
 import { store } from '@/redux/store';
 import { Routing } from '@/pages/routing';
+import { Settings } from '@/pages/settings';
 
 export const App = () => {
   return (
@@ -81,6 +82,22 @@ export const App = () => {
                       element={
                         <Protected>
                           <Routing />
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="settings"
+                      element={
+                        <Protected>
+                          <Settings />
+                        </Protected>
+                      }
+                    />
+                    <Route
+                      path="personal"
+                      element={
+                        <Protected>
+                          <Personal />
                         </Protected>
                       }
                     />

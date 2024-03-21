@@ -89,6 +89,8 @@ const translateColumn = (column: string) => {
       return 'начало';
     case 'manual':
       return 'ручной';
+    case 'additional':
+      return 'дополнительный';
     default:
       return column;
   }
@@ -848,7 +850,7 @@ const _Tabler = <T extends Record<string, any> & { id: number }>({
                               Object.entries(selectedRows).reduce(
                                 (accumulator, [key, value]) =>
                                   value
-                                    ? [...accumulator, parseInt(key)]
+                                    ? [...accumulator, key as any]
                                     : accumulator,
                                 [] as number[]
                               )

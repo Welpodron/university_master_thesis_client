@@ -2,10 +2,13 @@ import {
   ActionIcon,
   AppShell,
   Burger,
+  Card,
   Group,
+  SimpleGrid,
   Skeleton,
   Stack,
   Text,
+  Title,
   Tooltip,
   useComputedColorScheme,
   useMantineColorScheme,
@@ -22,12 +25,13 @@ import {
   IconMoon,
   IconRobot,
   IconRoute,
+  IconSettings,
   IconSun,
   IconTruck,
   IconUser,
   IconUsers,
 } from '@tabler/icons-react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 
 export const Root = () => {
   const { setColorScheme } = useMantineColorScheme();
@@ -36,6 +40,8 @@ export const Root = () => {
   });
 
   const { toggle: toggleFullScreen, fullscreen } = useFullscreen();
+
+  const location = useLocation();
 
   return (
     <AppShell
@@ -128,6 +134,16 @@ export const Root = () => {
               <IconUsers stroke={1.5} />
             </ActionIcon>
           </Tooltip>
+          <Tooltip label="Параметры системы">
+            <ActionIcon
+              component={Link}
+              to="/settings"
+              variant="light"
+              size="xl"
+            >
+              <IconSettings stroke={1.5} />
+            </ActionIcon>
+          </Tooltip>
         </Stack>
         <Stack mt="auto" align="center">
           <Tooltip label="Аккаунт">
@@ -148,6 +164,24 @@ export const Root = () => {
         </Stack>
       </AppShell.Navbar>
       <AppShell.Main>
+        {location.pathname === '/' && (
+          <>
+            <Title>
+              Административная панель системы планирования маршрутов
+            </Title>
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
+              <Card shadow="sm" padding="lg" radius="md" withBorder>
+                Назначения
+              </Card>
+              <Card>Транспортные заявки</Card>
+              <Card>Маршрутизация</Card>
+              <Card>Транспорт</Card>
+              <Card>Агенты</Card>
+              <Card>Сотрудники</Card>
+              <Card>Параметры системы</Card>
+            </SimpleGrid>
+          </>
+        )}
         <Outlet />
       </AppShell.Main>
     </AppShell>

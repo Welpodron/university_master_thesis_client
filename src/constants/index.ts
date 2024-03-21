@@ -1,3 +1,5 @@
+import { LatLngExpression } from 'leaflet';
+
 export type TModelField = {
   name: string;
   kind: string;
@@ -38,7 +40,17 @@ export type TAssignment = {
 };
 
 export type TRouting = {
-  startId: number;
-  endId: number;
+  id: number;
+  startCoords: string;
+  endCoords: string;
   distance: number;
+  duration: number;
+};
+
+export type TSettings = {
+  id: number;
+  depotLocation: string;
+  routingKey: string;
+  routingAlgo: string;
+  routingAlgoIterations: number;
 };

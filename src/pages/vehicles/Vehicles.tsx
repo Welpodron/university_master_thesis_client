@@ -12,23 +12,21 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { IconPencil, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
-import { useDispatch, useSelector } from 'react-redux';
 import { TVehicle } from '@/constants';
 import { TablerEditor, Tabler } from '@/components/tabler';
-import { RootState, AppDispatch } from '@/redux/store';
 import {
-  RESTaddVehicle,
-  RESTeditVehicle,
-  RESTdeleteVehicles,
-  RESTgetVehicles,
-} from '@/redux/thunks/vehicles';
+  useCreateVehicleMutation,
+  useDeleteVehiclesMutation,
+  useGetVehiclesQuery,
+  useUpdateVehicleMutation,
+} from '@/redux/services/api';
 
 export const Vehicles = () => {
-  const dispatch = useDispatch<AppDispatch>();
-
-  const { loading, data, model, error } = useSelector(
-    (state: RootState) => state.vehicles
-  );
+  const { data, isLoading: loading, error } = useGetVehiclesQuery(undefined);
+  const [createVehicle, { isLoading: isCreating }] = useCreateVehicleMutation();
+  const [updateVehicle, { isLoading: isUpdating }] = useUpdateVehicleMutation();
+  const [deleteVehicles, { isLoading: isDeliting }] =
+    useDeleteVehiclesMutation();
 
   const addForm = useForm<{
     name: string;
@@ -66,7 +64,7 @@ export const Vehicles = () => {
 
       (async () => {
         try {
-          await dispatch(RESTaddVehicle({ name, capacity }));
+          await createVehicle({ name, capacity });
           closeAddDrawer();
           addForm.reset();
         } catch (error) {
@@ -74,7 +72,7 @@ export const Vehicles = () => {
         }
       })();
     },
-    [dispatch]
+    []
   );
 
   const handleEditFormSubmit = useCallback(
@@ -93,30 +91,27 @@ export const Vehicles = () => {
 
       (async () => {
         try {
-          await dispatch(RESTeditVehicle({ id, name, capacity }));
+          await updateVehicle({ id, name, capacity });
           closeEditDrawer();
         } catch (error) {
           console.error(error);
         }
       })();
     },
-    [dispatch]
+    []
   );
 
-  const handleDeleteSubmit = useCallback(
-    ({ ids }: { ids: number[] }) => {
-      if (Array.isArray(ids)) {
-        (async () => {
-          try {
-            await dispatch(RESTdeleteVehicles(ids));
-          } catch (error) {
-            console.error(error);
-          }
-        })();
-      }
-    },
-    [dispatch]
-  );
+  const handleDeleteSubmit = useCallback(({ ids }: { ids: number[] }) => {
+    if (Array.isArray(ids)) {
+      (async () => {
+        try {
+          await deleteVehicles(ids);
+        } catch (error) {
+          console.error(error);
+        }
+      })();
+    }
+  }, []);
 
   const openConfirmDeleteModal = ({ ids }: { ids: number[] }) =>
     modals.openConfirmModal({
@@ -139,15 +134,7 @@ export const Vehicles = () => {
   useEffect(() => {
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
       'Транспорт';
-
-    (async () => {
-      try {
-        dispatch(RESTgetVehicles());
-      } catch (error) {
-        console.log(error);
-      }
-    })();
-  }, [dispatch]);
+  }, []);
 
   const tableActions = useMemo(
     () => [
@@ -212,8 +199,8 @@ export const Vehicles = () => {
       <Tabler
         {...{
           loading,
-          data,
-          model,
+          data: (data?.data as any) ?? [],
+          model: data?.model ?? {},
           tableActions,
           groupActions,
           itemActions,
@@ -248,8 +235,8 @@ export const Vehicles = () => {
               заполнения
             </Text>
             <Button
-              disabled={loading}
-              loading={loading}
+              disabled={isCreating}
+              loading={isCreating}
               mt="auto"
               w="100%"
               type="submit"
@@ -288,8 +275,8 @@ export const Vehicles = () => {
               заполнения
             </Text>
             <Button
-              loading={loading}
-              disabled={loading}
+              loading={isUpdating}
+              disabled={isUpdating}
               type="submit"
               mt="auto"
               w="100%"

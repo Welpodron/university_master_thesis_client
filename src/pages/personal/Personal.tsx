@@ -1,6 +1,5 @@
 import {
   Button,
-  Card,
   Group,
   NumberInput,
   Paper,
@@ -23,7 +22,11 @@ export const Personal = () => {
   return (
     <>
       <Title>Персональный раздел</Title>
-      <SimpleGrid mt="xl" cols={{ base: 1, sm: 2 }}>
+      <SimpleGrid
+        style={{ alignItems: 'start' }}
+        mt="xl"
+        cols={{ base: 1, sm: 2 }}
+      >
         <Paper withBorder radius="md" p="xl">
           <Group>
             <IconUser />

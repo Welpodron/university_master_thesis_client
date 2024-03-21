@@ -1,4 +1,5 @@
 import { Box, Stack, TextInput } from '@mantine/core';
+import { IconWorld } from '@tabler/icons-react';
 import { LatLngExpression } from 'leaflet';
 import { useState } from 'react';
 import {
@@ -47,12 +48,14 @@ const ClickMarker = ({
 };
 
 export type MapInputPropsType = {
+  label?: string;
   state?: [LatLngExpression | null, (value: LatLngExpression | null) => void];
   isDeleteEnabled?: boolean;
 };
 
 export const MapInput = ({
   state,
+  label = 'Координаты',
   isDeleteEnabled = true,
 }: MapInputPropsType) => {
   const [insideCoordinates, setInsideCoordinates] =
@@ -64,10 +67,12 @@ export const MapInput = ({
   return (
     <Stack>
       <TextInput
-        label="Координаты"
+        label={label}
         description="[latitude, longitude] или [широта, долгота]"
         value={coordinates ? JSON.stringify(coordinates) : ''}
         readOnly
+        placeholder="[55.752357,37.504578]"
+        rightSection={<IconWorld size={18} />}
         required={true}
       />
       <Box
