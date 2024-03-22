@@ -91,6 +91,12 @@ const translateColumn = (column: string) => {
       return 'ручной';
     case 'additional':
       return 'дополнительный';
+    case 'assigned':
+      return 'назначена';
+    case 'assignedAt':
+      return 'назначена (дата)';
+    case 'assignmentId':
+      return 'id назначения';
     default:
       return column;
   }

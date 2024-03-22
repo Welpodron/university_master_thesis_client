@@ -10,7 +10,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconX } from '@tabler/icons-react';
+import { IconDownload, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { Tabler, TablerEditor } from '@/components/tabler';
 import { TUser } from '@/constants';
@@ -22,9 +22,10 @@ import {
   RESTgetUsers,
 } from '@/redux/thunks/users';
 import { useGetUsersQuery } from '@/redux/services/api';
+import { exportData } from '@/utils';
 
 export const Users = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  // const dispatch = useDispatch<AppDispatch>();
 
   // const { data, model, loading, error } = useSelector(
   //   (state: RootState) => state.users
@@ -52,12 +53,12 @@ export const Users = () => {
 
       (async () => {
         try {
-          await dispatch(
-            RESTaddUser({
-              name,
-              email,
-            })
-          );
+          // await dispatch(
+          //   RESTaddUser({
+          //     name,
+          //     email,
+          //   })
+          // );
           closeAddDrawer();
           addForm.reset();
         } catch (error) {
@@ -72,7 +73,7 @@ export const Users = () => {
     if (Array.isArray(ids)) {
       (async () => {
         try {
-          await dispatch(RESTdeleteUsers(ids));
+          // await dispatch(RESTdeleteUsers(ids));
         } catch (error) {
           console.error(error);
         }
@@ -101,15 +102,7 @@ export const Users = () => {
   useEffect(() => {
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
       'Сотрудники';
-
-    (async () => {
-      try {
-        dispatch(RESTgetUsers());
-      } catch (error) {
-        console.log(error);
-      }
-    })();
-  }, [dispatch]);
+  }, []);
 
   const tableActions = useMemo(
     () => [
@@ -121,8 +114,22 @@ export const Users = () => {
           openAddDrawer();
         },
       },
+      {
+        name: 'Импорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {},
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {
+          exportData(data?.data);
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const groupActions = useMemo(
@@ -137,8 +144,24 @@ export const Users = () => {
           }
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            if (data?.data) {
+              exportData(
+                data.data.filter((row) =>
+                  selectedIds.some((id) => id == row.id)
+                )
+              );
+            }
+          }
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const itemActions = useMemo(
@@ -149,6 +172,14 @@ export const Users = () => {
         leftSection: <IconX size={20} />,
         onClick: (item: TUser) => {
           openConfirmDeleteModal({ ids: [item.id] });
+        },
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (item: TUser) => {
+          exportData([item]);
         },
       },
     ],

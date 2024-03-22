@@ -1,4 +1,13 @@
-import { TModelField, TRouting, TSettings, TVehicle } from '@/constants';
+import {
+  TAssignment,
+  TJob,
+  TModelField,
+  TRouting,
+  TSettings,
+  TTask,
+  TUser,
+  TVehicle,
+} from '@/constants';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
 
@@ -14,8 +23,16 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Vehicles', 'Settings'],
+  tagTypes: ['Vehicles', 'Tasks', 'Settings', 'Jobs', 'Routing', 'Assignments'],
   endpoints: (builder) => ({
+    // assignments
+    getAssignments: builder.query<
+      { data: TAssignment[]; model: Record<string, TModelField> },
+      undefined
+    >({
+      query: () => `assignments`,
+    }),
+    // routing
     getRouting: builder.query<
       { data: TRouting[]; model: Record<string, TModelField> },
       undefined
@@ -26,6 +43,88 @@ export const api = createApi({
     getSettings: builder.query<TSettings, undefined>({
       query: () => 'settings',
       providesTags: (result) => [{ type: 'Settings', id: 'LIST' }],
+    }),
+    // jobs
+    getJobs: builder.query<
+      { data: TJob[]; model: Record<string, TModelField> },
+      undefined
+    >({
+      query: () => 'jobs',
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Jobs', id } as const)),
+              { type: 'Jobs', id: 'LIST' },
+            ]
+          : [{ type: 'Jobs', id: 'LIST' }],
+    }),
+    createJob: builder.mutation<TJob, Omit<TJob, 'id' | 'completed'>>({
+      query: (body) => ({
+        url: 'jobs',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Jobs', id: 'LIST' }],
+    }),
+    updateJob: builder.mutation<TJob, TJob>({
+      query: ({ id, ...body }) => ({
+        url: `jobs/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Jobs', id }],
+    }),
+    deleteJobs: builder.mutation<number[], number[]>({
+      query: (ids) => ({
+        url: `jobs`,
+        method: 'DELETE',
+        body: { ids },
+      }),
+      invalidatesTags: (result, error) =>
+        result
+          ? result.map((id) => ({ type: 'Jobs', id }))
+          : [{ type: 'Jobs', id: 'LIST' }],
+    }),
+    // tasks
+    getTasks: builder.query<
+      { data: TTask[]; model: Record<string, TModelField> },
+      undefined
+    >({
+      query: () => 'tasks',
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Tasks', id } as const)),
+              { type: 'Tasks', id: 'LIST' },
+            ]
+          : [{ type: 'Tasks', id: 'LIST' }],
+    }),
+    createTask: builder.mutation<TTask, Omit<TTask, 'id'>>({
+      query: (body) => ({
+        url: 'tasks',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Tasks', id: 'LIST' }],
+    }),
+    updateTask: builder.mutation<TTask, TTask>({
+      query: ({ id, ...body }) => ({
+        url: `tasks/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Tasks', id }],
+    }),
+    deleteTasks: builder.mutation<number[], number[]>({
+      query: (ids) => ({
+        url: `tasks`,
+        method: 'DELETE',
+        body: { ids },
+      }),
+      invalidatesTags: (result, error) =>
+        result
+          ? result.map((id) => ({ type: 'Tasks', id }))
+          : [{ type: 'Tasks', id: 'LIST' }],
     }),
     // vehicles
     getVehicles: builder.query<
@@ -70,8 +169,9 @@ export const api = createApi({
           ? result.map((id) => ({ type: 'Vehicles', id }))
           : [{ type: 'Vehicles', id: 'LIST' }],
     }),
+    // users
     getUsers: builder.query<
-      { data: TRouting[]; model: Record<string, TModelField> },
+      { data: TUser[]; model: Record<string, TModelField> },
       unknown
     >({
       query: () => `users`,
@@ -80,13 +180,27 @@ export const api = createApi({
 });
 
 export const {
+  // assignments
+  useGetAssignmentsQuery,
+  // routing
   useGetRoutingQuery,
+  // users
   useGetUsersQuery,
+  // tasks
+  useGetTasksQuery,
+  useCreateTaskMutation,
+  useDeleteTasksMutation,
+  useUpdateTaskMutation,
   // vehicles
   useGetVehiclesQuery,
   useCreateVehicleMutation,
   useDeleteVehiclesMutation,
   useUpdateVehicleMutation,
+  // jobs
+  useGetJobsQuery,
+  useCreateJobMutation,
+  useDeleteJobsMutation,
+  useUpdateJobMutation,
   // settings
   useGetSettingsQuery,
 } = api;

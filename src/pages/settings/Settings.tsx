@@ -1,5 +1,6 @@
 import { MapInput } from '@/components/forms/map-input/MapInput';
 import { useGetSettingsQuery } from '@/redux/services/api';
+import { exportData } from '@/utils';
 import {
   Alert,
   Button,
@@ -17,6 +18,7 @@ import {
 import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import {
+  IconDownload,
   IconInfoCircle,
   IconKey,
   IconLetterA,
@@ -94,7 +96,20 @@ export const Settings = () => {
 
   return (
     <>
-      <Title>Параметры системы</Title>
+      <Group>
+        <Title>Параметры системы</Title>
+        <Button
+          onClick={() => {
+            exportData(data);
+          }}
+          ml="auto"
+          disabled={loading}
+          loading={loading}
+          leftSection={<IconDownload size={18} />}
+        >
+          Экспорт параметров
+        </Button>
+      </Group>
       <SimpleGrid
         style={{ alignItems: 'start' }}
         mt="xl"

@@ -11,12 +11,14 @@ import { MapInput } from '@/components/forms/map-input/MapInput';
 import { useDisclosure } from '@mantine/hooks';
 import { TRouting } from '@/constants';
 import {
+  IconDownload,
   IconInfoCircle,
   IconPencil,
   IconPlus,
   IconX,
 } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
+import { exportData } from '@/utils';
 
 export const Routing = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -188,8 +190,22 @@ export const Routing = () => {
           openAddDrawer();
         },
       },
+      {
+        name: 'Импорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {},
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {
+          exportData(data?.data);
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const groupActions = useMemo(
@@ -204,8 +220,24 @@ export const Routing = () => {
           }
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            if (data?.data) {
+              exportData(
+                data.data.filter((row) =>
+                  selectedIds.some((id) => id == row.id)
+                )
+              );
+            }
+          }
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const itemActions = useMemo(
@@ -231,6 +263,14 @@ export const Routing = () => {
         leftSection: <IconX size={20} />,
         onClick: (item: TRouting) => {
           openConfirmDeleteModal({ ids: [item.id as any] });
+        },
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (item: TRouting) => {
+          exportData([item]);
         },
       },
     ],

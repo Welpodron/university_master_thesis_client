@@ -10,7 +10,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPencil, IconPlus, IconX } from '@tabler/icons-react';
+import { IconDownload, IconPencil, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { TVehicle } from '@/constants';
 import { TablerEditor, Tabler } from '@/components/tabler';
@@ -20,6 +20,7 @@ import {
   useGetVehiclesQuery,
   useUpdateVehicleMutation,
 } from '@/redux/services/api';
+import { exportData } from '@/utils';
 
 export const Vehicles = () => {
   const { data, isLoading: loading, error } = useGetVehiclesQuery(undefined);
@@ -146,8 +147,22 @@ export const Vehicles = () => {
           openAddDrawer();
         },
       },
+      {
+        name: 'Импорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {},
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {
+          exportData(data?.data);
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const groupActions = useMemo(
@@ -162,8 +177,24 @@ export const Vehicles = () => {
           }
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            if (data?.data) {
+              exportData(
+                data.data.filter((row) =>
+                  selectedIds.some((id) => id == row.id)
+                )
+              );
+            }
+          }
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const itemActions = useMemo(
@@ -187,6 +218,14 @@ export const Vehicles = () => {
         leftSection: <IconX size={20} />,
         onClick: (item: TVehicle) => {
           openConfirmDeleteModal({ ids: [item.id] });
+        },
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (item: TVehicle) => {
+          exportData([item]);
         },
       },
     ],

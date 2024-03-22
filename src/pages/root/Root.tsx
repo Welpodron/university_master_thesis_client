@@ -3,7 +3,9 @@ import {
   AppShell,
   Burger,
   Card,
+  Center,
   Group,
+  Paper,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -15,9 +17,12 @@ import {
 } from '@mantine/core';
 import { useDisclosure, useFullscreen } from '@mantine/hooks';
 import {
+  IconArrowLeft,
+  IconArrowRight,
   IconArrowsMaximize,
   IconArrowsMinimize,
   IconClipboardList,
+  IconHome,
   IconListNumbers,
   IconLogin,
   IconLogout,
@@ -30,8 +35,48 @@ import {
   IconTruck,
   IconUser,
   IconUsers,
+  TablerIconsProps,
 } from '@tabler/icons-react';
+import { useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+
+const locations = [
+  {
+    url: 'assignments',
+    name: 'Назначения',
+    icon: (props: TablerIconsProps) => <IconListNumbers {...props} />,
+  },
+  {
+    url: 'tasks',
+    name: 'Заявки',
+    icon: (props: TablerIconsProps) => <IconClipboardList {...props} />,
+  },
+  {
+    url: 'routing',
+    name: 'Маршрутизация',
+    icon: (props: TablerIconsProps) => <IconRoute {...props} />,
+  },
+  {
+    url: 'vehicles',
+    name: 'Транспорт',
+    icon: (props: TablerIconsProps) => <IconTruck {...props} />,
+  },
+  {
+    url: 'jobs',
+    name: 'Агенты',
+    icon: (props: TablerIconsProps) => <IconRobot {...props} />,
+  },
+  {
+    url: 'users',
+    name: 'Сотрудники',
+    icon: (props: TablerIconsProps) => <IconUsers {...props} />,
+  },
+  {
+    url: 'settings',
+    name: 'Параметры системы',
+    icon: (props: TablerIconsProps) => <IconSettings {...props} />,
+  },
+];
 
 export const Root = () => {
   const { setColorScheme } = useMantineColorScheme();
@@ -89,61 +134,23 @@ export const Root = () => {
         bg={computedColorScheme === 'light' ? 'gray.0' : 'dark.9'}
       >
         <Stack align="center">
-          <Tooltip label="Назначения">
-            <ActionIcon
-              component={Link}
-              to="/assignments"
-              variant="light"
-              size="xl"
-            >
-              <IconListNumbers stroke={1.5} />
+          <Tooltip label="Главная">
+            <ActionIcon component={Link} to={`/`} variant="light" size="xl">
+              <IconHome stroke={1.5} />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Заявки">
-            <ActionIcon component={Link} to="/tasks" variant="light" size="xl">
-              <IconClipboardList stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Маршрутизация">
-            <ActionIcon
-              component={Link}
-              to="/routing"
-              variant="light"
-              size="xl"
-            >
-              <IconRoute stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Транспорт">
-            <ActionIcon
-              component={Link}
-              to="/vehicles"
-              variant="light"
-              size="xl"
-            >
-              <IconTruck stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Агенты">
-            <ActionIcon component={Link} to="/jobs" variant="light" size="xl">
-              <IconRobot stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Сотрудники">
-            <ActionIcon component={Link} to="/users" variant="light" size="xl">
-              <IconUsers stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Параметры системы">
-            <ActionIcon
-              component={Link}
-              to="/settings"
-              variant="light"
-              size="xl"
-            >
-              <IconSettings stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
+          {locations.map((location) => (
+            <Tooltip key={location.url} label={location.name}>
+              <ActionIcon
+                component={Link}
+                to={`/${location.url}`}
+                variant="light"
+                size="xl"
+              >
+                {location.icon({ stroke: 1.5 })}
+              </ActionIcon>
+            </Tooltip>
+          ))}
         </Stack>
         <Stack mt="auto" align="center">
           <Tooltip label="Аккаунт">
@@ -166,19 +173,25 @@ export const Root = () => {
       <AppShell.Main>
         {location.pathname === '/' && (
           <>
-            <Title>
-              Административная панель системы планирования маршрутов
-            </Title>
+            <Title mb="xl">Страницы</Title>
             <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
-              <Card shadow="sm" padding="lg" radius="md" withBorder>
-                Назначения
-              </Card>
-              <Card>Транспортные заявки</Card>
-              <Card>Маршрутизация</Card>
-              <Card>Транспорт</Card>
-              <Card>Агенты</Card>
-              <Card>Сотрудники</Card>
-              <Card>Параметры системы</Card>
+              {locations.map((location) => (
+                <Link key={location.url} to={`/${location.url}`}>
+                  <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Card.Section>
+                      <Center h={250}>
+                        {location.icon({ stroke: 1, size: '8rem' })}
+                      </Center>
+                    </Card.Section>
+                    <Group gap={5}>
+                      <Text fw={500} size="lg">
+                        {location.name}
+                      </Text>
+                      <IconArrowRight />
+                    </Group>
+                  </Card>
+                </Link>
+              ))}
             </SimpleGrid>
           </>
         )}

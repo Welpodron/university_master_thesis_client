@@ -2,26 +2,24 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from '@mantine/form';
 import { Stack, Button, Text, Switch, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPencil, IconPlus, IconX } from '@tabler/icons-react';
+import { IconDownload, IconPencil, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { DatePickerInput } from '@mantine/dates';
 import { Tabler, TablerEditor } from '@/components/tabler';
-import { useDispatch, useSelector } from 'react-redux';
 import { TJob } from '@/constants';
-import { AppDispatch, RootState } from '@/redux/store';
 import {
-  RESTaddJob,
-  RESTeditJob,
-  RESTdeleteJobs,
-  RESTgetJobs,
-} from '@/redux/thunks/jobs';
+  useCreateJobMutation,
+  useDeleteJobsMutation,
+  useGetJobsQuery,
+  useUpdateJobMutation,
+} from '@/redux/services/api';
+import { exportData } from '@/utils';
 
 export const Jobs = () => {
-  const dispatch = useDispatch<AppDispatch>();
-
-  const { data, loading, model, error } = useSelector(
-    (state: RootState) => state.jobs
-  );
+  const { data, isLoading: loading, error } = useGetJobsQuery(undefined);
+  const [createJob, { isLoading: isCreating }] = useCreateJobMutation();
+  const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
+  const [deleteJobs, { isLoading: isDeliting }] = useDeleteJobsMutation();
 
   const addForm = useForm<{
     date: Date | null;
@@ -49,24 +47,21 @@ export const Jobs = () => {
   const [isEditDrawerOpened, { open: openEditDrawer, close: closeEditDrawer }] =
     useDisclosure(false);
 
-  const handleAddFormSubmit = useCallback(
-    ({ date }: { date: Date | null }) => {
-      if (!date) {
-        return;
-      }
+  const handleAddFormSubmit = useCallback(({ date }: { date: Date | null }) => {
+    if (!date) {
+      return;
+    }
 
-      (async () => {
-        try {
-          await dispatch(RESTaddJob({ date }));
-          closeAddDrawer();
-          addForm.reset();
-        } catch (error) {
-          console.error(error);
-        }
-      })();
-    },
-    [dispatch]
-  );
+    (async () => {
+      try {
+        await createJob({ date });
+        closeAddDrawer();
+        addForm.reset();
+      } catch (error) {
+        console.error(error);
+      }
+    })();
+  }, []);
 
   const handleEditFormSubmit = useCallback(
     ({
@@ -84,36 +79,31 @@ export const Jobs = () => {
 
       (async () => {
         try {
-          await dispatch(
-            RESTeditJob({
-              id,
-              date,
-              completed: completed === true,
-            })
-          );
+          await updateJob({
+            id,
+            date,
+            completed: completed === true,
+          });
           closeEditDrawer();
         } catch (error) {
           console.error(error);
         }
       })();
     },
-    [dispatch]
+    []
   );
 
-  const handleDeleteSubmit = useCallback(
-    ({ ids }: { ids: number[] }) => {
-      if (Array.isArray(ids)) {
-        (async () => {
-          try {
-            await dispatch(RESTdeleteJobs(ids));
-          } catch (error) {
-            console.error(error);
-          }
-        })();
-      }
-    },
-    [dispatch]
-  );
+  const handleDeleteSubmit = useCallback(({ ids }: { ids: number[] }) => {
+    if (Array.isArray(ids)) {
+      (async () => {
+        try {
+          await deleteJobs(ids);
+        } catch (error) {
+          console.error(error);
+        }
+      })();
+    }
+  }, []);
 
   const openConfirmDeleteModal = ({ ids }: { ids: number[] }) =>
     modals.openConfirmModal({
@@ -136,15 +126,7 @@ export const Jobs = () => {
   useEffect(() => {
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
       'Задачи';
-
-    (async () => {
-      try {
-        dispatch(RESTgetJobs());
-      } catch (error) {
-        console.log(error);
-      }
-    })();
-  }, [dispatch]);
+  }, []);
 
   const tableActions = useMemo(
     () => [
@@ -156,8 +138,22 @@ export const Jobs = () => {
           openAddDrawer();
         },
       },
+      {
+        name: 'Импорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {},
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {
+          exportData(data?.data);
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const groupActions = useMemo(
@@ -172,8 +168,24 @@ export const Jobs = () => {
           }
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            if (data?.data) {
+              exportData(
+                data.data.filter((row) =>
+                  selectedIds.some((id) => id == row.id)
+                )
+              );
+            }
+          }
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const itemActions = useMemo(
@@ -199,6 +211,14 @@ export const Jobs = () => {
           openConfirmDeleteModal({ ids: [item.id] });
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (item: TJob) => {
+          exportData([item]);
+        },
+      },
     ],
     []
   );
@@ -209,8 +229,8 @@ export const Jobs = () => {
       <Tabler
         {...{
           loading,
-          data,
-          model,
+          data: (data?.data as any) ?? [],
+          model: data?.model ?? {},
           tableActions,
           groupActions,
           itemActions,
@@ -236,8 +256,8 @@ export const Jobs = () => {
               заполнения
             </Text>
             <Button
-              disabled={loading}
-              loading={loading}
+              disabled={isCreating}
+              loading={isCreating}
               mt="auto"
               w="100%"
               type="submit"
@@ -272,8 +292,8 @@ export const Jobs = () => {
               заполнения
             </Text>
             <Button
-              loading={loading}
-              disabled={loading}
+              loading={isUpdating}
+              disabled={isUpdating}
               type="submit"
               mt="auto"
               w="100%"

@@ -6,11 +6,13 @@ export const TablerEditor = ({
   onClose,
   children,
   type,
+  title,
 }: {
   children: ReactElement;
   opened: boolean;
   onClose: () => void;
   type: 'edit' | 'add';
+  title?: string;
 }) => {
   return (
     <Drawer
@@ -20,7 +22,10 @@ export const TablerEditor = ({
       opened={opened}
       title={
         <Text fw={500} fz="lg">
-          {type === 'add' ? 'Добавление элемента' : 'Редактирование элемента'}
+          {title ||
+            (type === 'add'
+              ? 'Добавление элемента'
+              : 'Редактирование элемента')}
         </Text>
       }
       onClose={onClose}

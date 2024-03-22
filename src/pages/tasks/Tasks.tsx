@@ -4,27 +4,44 @@ import { Tabler } from '@/components/tabler/Tabler';
 import { useForm } from '@mantine/form';
 import { LatLngExpression } from 'leaflet';
 import { MapInput } from '@/components/forms/map-input/MapInput';
-import { Stack, NumberInput, Button, Text, Title } from '@mantine/core';
+import {
+  Stack,
+  NumberInput,
+  Button,
+  Text,
+  Title,
+  TextInput,
+  Select,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPencil, IconPlus, IconX } from '@tabler/icons-react';
+import {
+  IconDownload,
+  IconListNumbers,
+  IconPencil,
+  IconPlus,
+  IconX,
+} from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { TTask } from '@/constants';
 import { TablerEditor } from '@/components/tabler';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/redux/store';
 import {
-  RESTaddTask,
-  RESTeditTask,
-  RESTdeleteTasks,
-  RESTgetTasks,
-} from '@/redux/thunks/tasks';
+  useCreateTaskMutation,
+  useDeleteTasksMutation,
+  useGetTasksQuery,
+  useGetUsersQuery,
+  useGetVehiclesQuery,
+  useUpdateTaskMutation,
+} from '@/redux/services/api';
+import { exportData } from '@/utils';
 
 export const Tasks = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const { data, isLoading: loading, error } = useGetTasksQuery(undefined);
+  const [createTask, { isLoading: isCreating }] = useCreateTaskMutation();
+  const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
+  const [deleteTasks, { isLoading: isDeliting }] = useDeleteTasksMutation();
 
-  const { data, model, loading, error } = useSelector(
-    (state: RootState) => state.tasks
-  );
+  const { data: vehiclesData } = useGetVehiclesQuery(undefined);
+  const { data: usersData } = useGetUsersQuery(undefined);
 
   const addForm = useForm<{
     coordinates: LatLngExpression | null;
@@ -48,11 +65,28 @@ export const Tasks = () => {
     },
   });
 
+  const assignmentForm = useForm<{
+    taskId: number | null;
+    transportId: string;
+    userId: string;
+  }>({
+    initialValues: {
+      taskId: null,
+      transportId: '',
+      userId: '',
+    },
+  });
+
   const [isAddDrawerOpened, { open: openAddDrawer, close: closeAddDrawer }] =
     useDisclosure(false);
 
   const [isEditDrawerOpened, { open: openEditDrawer, close: closeEditDrawer }] =
     useDisclosure(false);
+
+  const [
+    isAssignmentDrawerOpened,
+    { open: openAssignmentDrawer, close: closeAssignmentDrawer },
+  ] = useDisclosure(false);
 
   const handleAddFormSubmit = useCallback(
     ({
@@ -68,13 +102,11 @@ export const Tasks = () => {
 
       (async () => {
         try {
-          await dispatch(
-            RESTaddTask({
-              latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-              longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-              demand,
-            })
-          );
+          await createTask({
+            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
+            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
+            demand,
+          });
           closeAddDrawer();
           addForm.reset();
         } catch (error) {
@@ -82,7 +114,7 @@ export const Tasks = () => {
         }
       })();
     },
-    [dispatch]
+    []
   );
 
   const handleEditFormSubmit = useCallback(
@@ -101,37 +133,32 @@ export const Tasks = () => {
 
       (async () => {
         try {
-          await dispatch(
-            RESTeditTask({
-              id,
-              latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
-              longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
-              demand,
-            })
-          );
+          await updateTask({
+            id,
+            latitude: parseFloat((coordinates as number[])[0].toFixed(6)),
+            longitude: parseFloat((coordinates as number[])[1].toFixed(6)),
+            demand,
+          });
           closeEditDrawer();
         } catch (error) {
           console.error(error);
         }
       })();
     },
-    [dispatch]
+    []
   );
 
-  const handleDeleteSubmit = useCallback(
-    ({ ids }: { ids: number[] }) => {
-      if (Array.isArray(ids)) {
-        (async () => {
-          try {
-            await dispatch(RESTdeleteTasks(ids));
-          } catch (error) {
-            console.error(error);
-          }
-        })();
-      }
-    },
-    [dispatch]
-  );
+  const handleDeleteSubmit = useCallback(({ ids }: { ids: number[] }) => {
+    if (Array.isArray(ids)) {
+      (async () => {
+        try {
+          await deleteTasks(ids);
+        } catch (error) {
+          console.error(error);
+        }
+      })();
+    }
+  }, []);
 
   const openConfirmDeleteModal = ({ ids }: { ids: number[] }) =>
     modals.openConfirmModal({
@@ -153,16 +180,8 @@ export const Tasks = () => {
 
   useEffect(() => {
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
-      'Задачи';
-
-    (async () => {
-      try {
-        dispatch(RESTgetTasks());
-      } catch (error) {
-        console.log(error);
-      }
-    })();
-  }, [dispatch]);
+      'Транспортные заявки';
+  }, []);
 
   const tableActions = useMemo(
     () => [
@@ -174,8 +193,30 @@ export const Tasks = () => {
           openAddDrawer();
         },
       },
+      {
+        name: 'Импорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {},
+      },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {
+          exportData(data?.data);
+        },
+      },
+      {
+        name: 'Расчет',
+        color: 'blue',
+        leftSection: <IconListNumbers size={20} />,
+        onClick: () => {
+          console.log(1);
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const groupActions = useMemo(
@@ -190,8 +231,34 @@ export const Tasks = () => {
           }
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            if (data?.data) {
+              exportData(
+                data.data.filter((row) =>
+                  selectedIds.some((id) => id == row.id)
+                )
+              );
+            }
+          }
+        },
+      },
+      {
+        name: 'Расчет',
+        color: 'blue',
+        leftSection: <IconListNumbers size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            console.log(selectedIds);
+          }
+        },
+      },
     ],
-    []
+    [data]
   );
 
   const itemActions = useMemo(
@@ -217,6 +284,25 @@ export const Tasks = () => {
           openConfirmDeleteModal({ ids: [item.id] });
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (item: TTask) => {
+          exportData([item]);
+        },
+      },
+      {
+        name: 'Назначение',
+        color: 'blue',
+        leftSection: <IconListNumbers size={20} />,
+        onClick: (item: TTask) => {
+          assignmentForm.setValues({
+            taskId: item.id,
+          });
+          openAssignmentDrawer();
+        },
+      },
     ],
     []
   );
@@ -227,8 +313,8 @@ export const Tasks = () => {
       <Tabler
         {...{
           loading,
-          data,
-          model,
+          data: (data?.data as any) ?? [],
+          model: data?.model ?? {},
           tableActions,
           groupActions,
           itemActions,
@@ -261,8 +347,8 @@ export const Tasks = () => {
               заполнения
             </Text>
             <Button
-              disabled={loading}
-              loading={loading}
+              disabled={isCreating}
+              loading={isCreating}
               mt="auto"
               w="100%"
               type="submit"
@@ -300,8 +386,72 @@ export const Tasks = () => {
               заполнения
             </Text>
             <Button
-              loading={loading}
-              disabled={loading}
+              loading={isUpdating}
+              disabled={isUpdating}
+              type="submit"
+              mt="auto"
+              w="100%"
+            >
+              Сохранить
+            </Button>
+          </Stack>
+        </form>
+      </TablerEditor>
+      <TablerEditor
+        type="edit"
+        title="Ручное назначение"
+        opened={isAssignmentDrawerOpened}
+        onClose={closeAssignmentDrawer}
+      >
+        <form>
+          <Stack>
+            <TextInput
+              readOnly={true}
+              disabled={true}
+              required={true}
+              placeholder="-1"
+              label="Идентификатор транспортной заявки"
+              value={assignmentForm.values.taskId ?? ''}
+            />
+            <Select
+              label="Идентификатор транспорта"
+              placeholder="Выберите идентификатор транспорта"
+              data={
+                vehiclesData?.data
+                  ? vehiclesData.data.map((row) => ({
+                      label: `[${row.id}] ${row.name}`,
+                      value: String(row.id),
+                    }))
+                  : []
+              }
+              required={true}
+              searchable={true}
+              clearable={true}
+              {...assignmentForm.getInputProps('transportId')}
+            />
+            <Select
+              label="Идентификатор сотрудника"
+              placeholder="Выберите идентификатор сотрудника"
+              data={
+                usersData?.data
+                  ? usersData.data.map((row) => ({
+                      label: `[${row.id}] ${row.name}`,
+                      value: String(row.id),
+                    }))
+                  : []
+              }
+              required={true}
+              searchable={true}
+              clearable={true}
+              {...assignmentForm.getInputProps('userId')}
+            />
+            <Text fz="xs" c="dimmed">
+              <span style={{ color: 'red' }}>*</span> - поля, обязательные для
+              заполнения
+            </Text>
+            <Button
+              loading={true}
+              disabled={true}
               type="submit"
               mt="auto"
               w="100%"
