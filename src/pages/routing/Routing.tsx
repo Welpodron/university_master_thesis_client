@@ -191,12 +191,6 @@ export const Routing = () => {
         },
       },
       {
-        name: 'Импорт',
-        color: 'blue',
-        leftSection: <IconDownload size={20} />,
-        onClick: () => {},
-      },
-      {
         name: 'Экспорт',
         color: 'blue',
         leftSection: <IconDownload size={20} />,

@@ -33,6 +33,20 @@ export const authLogin = createAsyncThunk<
   }
 });
 
+export const authLogout = createAsyncThunk<null>('auth/logout', async () => {
+  try {
+    await API.get<{
+      id: number;
+      role: string;
+      token: string;
+    }>('/logout');
+  } catch (_) {
+  } finally {
+    localStorage.removeItem('token');
+    return null;
+  }
+});
+
 export const authVerify = createAsyncThunk<{ id: number; role: string } | null>(
   'auth/verify',
   async () => {

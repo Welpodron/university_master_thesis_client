@@ -14,23 +14,13 @@ import { IconDownload, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { Tabler, TablerEditor } from '@/components/tabler';
 import { TUser } from '@/constants';
-import { AppDispatch, RootState } from '@/redux/store';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  RESTaddUser,
-  RESTdeleteUsers,
-  RESTgetUsers,
-} from '@/redux/thunks/users';
-import { useGetUsersQuery } from '@/redux/services/api';
+import { useCreateUserMutation, useGetUsersQuery } from '@/redux/services/api';
 import { exportData } from '@/utils';
 
 export const Users = () => {
-  // const dispatch = useDispatch<AppDispatch>();
-
-  // const { data, model, loading, error } = useSelector(
-  //   (state: RootState) => state.users
-  // );
   const { data, isLoading: loading, error } = useGetUsersQuery(undefined);
+
+  const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
 
   const addForm = useForm<{
     name: string;
@@ -53,12 +43,7 @@ export const Users = () => {
 
       (async () => {
         try {
-          // await dispatch(
-          //   RESTaddUser({
-          //     name,
-          //     email,
-          //   })
-          // );
+          await createUser({ name, email });
           closeAddDrawer();
           addForm.reset();
         } catch (error) {
@@ -101,7 +86,7 @@ export const Users = () => {
 
   useEffect(() => {
     (document.head.querySelector('title') as HTMLTitleElement).textContent =
-      'Сотрудники';
+      'Персонал';
   }, []);
 
   const tableActions = useMemo(
@@ -113,12 +98,6 @@ export const Users = () => {
         onClick: () => {
           openAddDrawer();
         },
-      },
-      {
-        name: 'Импорт',
-        color: 'blue',
-        leftSection: <IconDownload size={20} />,
-        onClick: () => {},
       },
       {
         name: 'Экспорт',
@@ -188,7 +167,7 @@ export const Users = () => {
 
   return (
     <>
-      <Title>Сотрудники</Title>
+      <Title>Персонал</Title>
       <Tabler
         {...{
           loading,
@@ -224,8 +203,8 @@ export const Users = () => {
               {...addForm.getInputProps('email')}
             />
             <Button
-              disabled={loading}
-              loading={loading}
+              disabled={isCreating}
+              loading={isCreating}
               mt="auto"
               w="100%"
               type="submit"

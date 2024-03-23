@@ -23,8 +23,23 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Vehicles', 'Tasks', 'Settings', 'Jobs', 'Routing', 'Assignments'],
+  tagTypes: [
+    'Vehicles',
+    'Tasks',
+    'Settings',
+    'Jobs',
+    'Routing',
+    'Assignments',
+    'Users',
+  ],
   endpoints: (builder) => ({
+    // works
+    getWorks: builder.query<
+      { data: TAssignment[]; model: Record<string, TModelField> },
+      undefined
+    >({
+      query: () => `works`,
+    }),
     // assignments
     getAssignments: builder.query<
       { data: TAssignment[]; model: Record<string, TModelField> },
@@ -175,17 +190,35 @@ export const api = createApi({
       unknown
     >({
       query: () => `users`,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Users', id } as const)),
+              { type: 'Users', id: 'LIST' },
+            ]
+          : [{ type: 'Users', id: 'LIST' }],
+    }),
+    createUser: builder.mutation<TUser, Omit<TUser, 'id'>>({
+      query: (body) => ({
+        url: 'users',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Users', id: 'LIST' }],
     }),
   }),
 });
 
 export const {
+  // works
+  useGetWorksQuery,
   // assignments
   useGetAssignmentsQuery,
   // routing
   useGetRoutingQuery,
   // users
   useGetUsersQuery,
+  useCreateUserMutation,
   // tasks
   useGetTasksQuery,
   useCreateTaskMutation,

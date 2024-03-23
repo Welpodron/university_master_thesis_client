@@ -1,6 +1,6 @@
 import { SerializedError, createSlice } from '@reduxjs/toolkit';
 
-import { authLogin, authVerify } from '@/redux/thunks/auth';
+import { authLogin, authLogout, authVerify } from '@/redux/thunks/auth';
 
 const initialState: {
   verifying: boolean;
@@ -59,6 +59,12 @@ const slice = createSlice({
           state.error = action.payload as SerializedError;
           state.requestId = undefined;
         }
+      })
+      .addCase(authLogout.fulfilled, (state, action) => {
+        state.user = null;
+      })
+      .addCase(authLogout.rejected, (state, action) => {
+        state.user = null;
       });
   },
 });

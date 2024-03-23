@@ -26,6 +26,8 @@ import { Verifier } from '@/components/verifier';
 import { store } from '@/redux/store';
 import { Routing } from '@/pages/routing';
 import { Settings } from '@/pages/settings';
+import { Protector } from '../protector';
+import { Works } from '@/pages/works';
 
 export const App = () => {
   return (
@@ -36,7 +38,22 @@ export const App = () => {
             <Verifier>
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Root />}>
+                  <Route
+                    path="/"
+                    element={
+                      <Protector>
+                        <Root />
+                      </Protector>
+                    }
+                  >
+                    <Route
+                      path="works"
+                      element={
+                        <Protected>
+                          <Works />
+                        </Protected>
+                      }
+                    />
                     <Route
                       path="tasks"
                       element={
