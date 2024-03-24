@@ -28,6 +28,7 @@ import {
   Select,
   NumberInput,
   LoadingOverlay,
+  Divider,
 } from '@mantine/core';
 import {
   IconSettings,
@@ -97,6 +98,12 @@ const translateColumn = (column: string) => {
       return 'назначена (дата)';
     case 'assignmentId':
       return 'id назначения';
+    case 'tasks':
+      return 'задачи';
+    case 'userId':
+      return 'сотрудник (id)';
+    case 'vehicleId':
+      return 'транспорт (id)';
     default:
       return column;
   }
@@ -222,6 +229,70 @@ const FormattedValue = memo(
           }}
         >
           Показать на карте
+        </Button>
+      );
+    }
+
+    if (column === 'tasks') {
+      return (
+        <Button
+          size="xs"
+          onClick={() => {
+            modals.open({
+              size: 'xl',
+              centered: true,
+              title: 'Задачи',
+              children: (
+                <Stack>
+                  {children.map((child, index) => {
+                    return (
+                      <Fragment key={index}>
+                        <Divider />
+                        <Text fz="md" fw="500">
+                          Задача № {child.id}
+                        </Text>
+                        <TextInput
+                          label="Координаты задачи"
+                          value={`[${child.latitude}, ${child.longitude}]`}
+                          disabled={true}
+                          readOnly={true}
+                        />
+                        <Box
+                          h={300}
+                          style={{
+                            borderRadius: '5px',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <MapContainer
+                            center={[child.latitude, child.longitude]}
+                            zoom={16}
+                          >
+                            <TileLayer
+                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <Marker
+                              position={[child.latitude, child.longitude]}
+                            />
+                          </MapContainer>
+                        </Box>
+                        <NumberInput
+                          label="Перевозимого груза"
+                          value={child.demand}
+                          disabled={true}
+                          readOnly={true}
+                        />
+                        <Divider />
+                      </Fragment>
+                    );
+                  })}
+                </Stack>
+              ),
+            });
+          }}
+        >
+          Показать задачи
         </Button>
       );
     }

@@ -16,9 +16,11 @@ import {
   useGetUsersQuery,
   useGetVehiclesQuery,
 } from '@/redux/services/api';
-import { IconPlus } from '@tabler/icons-react';
+import { IconDownload, IconPlus } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
+import { TAssignment } from '@/constants';
+import { exportData } from '@/utils';
 
 export const Assignments = () => {
   const { data, isLoading: loading, error } = useGetAssignmentsQuery(undefined);
@@ -56,13 +58,61 @@ export const Assignments = () => {
           openAddDrawer();
         },
       },
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {
+          exportData(data?.data);
+        },
+      },
     ],
     []
   );
 
-  const groupActions = useMemo(() => [], []);
+  const groupActions = useMemo(
+    () => [
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (selectedIds: number[]) => {
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            if (data?.data) {
+              exportData(
+                data.data.filter((row) =>
+                  selectedIds.some((id) => id == row.id)
+                )
+              );
+            }
+          }
+        },
+      },
+    ],
+    [data]
+  );
 
-  const itemActions = useMemo(() => [], []);
+  const itemActions = useMemo(
+    () => [
+      {
+        name: 'Экспорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (item: TAssignment) => {
+          exportData([item]);
+        },
+      },
+      {
+        name: 'Получить маршрутный лист',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: (item: TAssignment) => {
+          // exportData([item]);
+        },
+      },
+    ],
+    []
+  );
 
   return (
     <>

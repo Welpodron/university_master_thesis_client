@@ -10,17 +10,22 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconDownload, IconPlus, IconX } from '@tabler/icons-react';
+import { IconDownload, IconPencil, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { Tabler, TablerEditor } from '@/components/tabler';
 import { TUser } from '@/constants';
-import { useCreateUserMutation, useGetUsersQuery } from '@/redux/services/api';
+import {
+  useCreateUserMutation,
+  useGetUsersQuery,
+  useUpdateUserMutation,
+} from '@/redux/services/api';
 import { exportData } from '@/utils';
 
 export const Users = () => {
   const { data, isLoading: loading, error } = useGetUsersQuery(undefined);
 
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
 
   const addForm = useForm<{
     name: string;
@@ -32,8 +37,39 @@ export const Users = () => {
     },
   });
 
+  const editForm = useForm<{
+    id: number;
+    name: string;
+  }>({
+    initialValues: {
+      id: NaN,
+      name: '',
+    },
+  });
+
+  const [isEditDrawerOpened, { open: openEditDrawer, close: closeEditDrawer }] =
+    useDisclosure(false);
+
   const [isAddDrawerOpened, { open: openAddDrawer, close: closeAddDrawer }] =
     useDisclosure(false);
+
+  const handleEditFormSubmit = useCallback(
+    ({ name, id }: { name: string; id: number }) => {
+      if (!name || !id) {
+        return;
+      }
+
+      (async () => {
+        try {
+          await updateUser({ id, name });
+          closeEditDrawer();
+        } catch (error) {
+          console.error(error);
+        }
+      })();
+    },
+    []
+  );
 
   const handleAddFormSubmit = useCallback(
     ({ name, email }: { name: string; email: string }) => {
@@ -146,6 +182,18 @@ export const Users = () => {
   const itemActions = useMemo(
     () => [
       {
+        name: 'Изменить',
+        color: 'blue',
+        leftSection: <IconPencil size={20} />,
+        onClick: (item: TUser) => {
+          editForm.setValues({
+            id: item.id,
+            name: item.name,
+          });
+          openEditDrawer();
+        },
+      },
+      {
         name: 'Удалить',
         color: 'red',
         leftSection: <IconX size={20} />,
@@ -179,6 +227,33 @@ export const Users = () => {
         }}
       />
       <TablerEditor
+        type="edit"
+        opened={isEditDrawerOpened}
+        onClose={closeEditDrawer}
+      >
+        <form onSubmit={editForm.onSubmit(handleEditFormSubmit)}>
+          <Stack>
+            <TextInput
+              label="ФИО"
+              description="ФИО пользователя"
+              placeholder="Иванов Иван Иванович"
+              min={1}
+              required={true}
+              {...editForm.getInputProps('name')}
+            />
+            <Button
+              disabled={isUpdating}
+              loading={isUpdating}
+              mt="auto"
+              w="100%"
+              type="submit"
+            >
+              Сохранить
+            </Button>
+          </Stack>
+        </form>
+      </TablerEditor>
+      <TablerEditor
         type="add"
         opened={isAddDrawerOpened}
         onClose={closeAddDrawer}
@@ -186,9 +261,9 @@ export const Users = () => {
         <form onSubmit={addForm.onSubmit(handleAddFormSubmit)}>
           <Stack>
             <TextInput
-              label="Имя"
-              description="Имя пользователя"
-              placeholder="Алексей"
+              label="ФИО"
+              description="ФИО пользователя"
+              placeholder="Иванов Иван Иванович"
               min={1}
               required={true}
               {...addForm.getInputProps('name')}

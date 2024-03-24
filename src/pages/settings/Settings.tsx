@@ -34,14 +34,14 @@ export const Settings = () => {
     id: number;
     depotLocation: LatLngExpression | null;
     routingKey: string;
-    routingAlgo: string;
+    // routingAlgo: string;
     routingAlgoIterations: number | null;
   }>({
     initialValues: {
       id: NaN,
       depotLocation: null,
       routingKey: '',
-      routingAlgo: '',
+      // routingAlgo: '',
       routingAlgoIterations: null,
     },
   });
@@ -182,14 +182,14 @@ export const Settings = () => {
             Используемые при расчетах алгоритмы, их параметры
           </Text>
           <Stack mb="xl">
-            <Select
+            {/* <Select
               label="Используемый алгоритм"
               placeholder="Используемый алгоритм"
               required={true}
               description="Рекомендуется использование ABC_CLARKE"
               data={['ABC_CLARKE', 'ABC_TABU', 'CLARKE', 'ANT']}
               {...editForm.getInputProps('routingAlgo')}
-            />
+            /> */}
             <NumberInput
               label="Количество итераций"
               required={true}

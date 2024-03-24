@@ -70,14 +70,14 @@ export const App = () => {
                         </Protected>
                       }
                     />
-                    <Route
+                    {/* <Route
                       path="jobs"
                       element={
                         <Protected>
                           <Jobs />
                         </Protected>
                       }
-                    />
+                    /> */}
                     <Route
                       path="users"
                       element={

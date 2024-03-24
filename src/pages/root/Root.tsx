@@ -74,12 +74,12 @@ const locations = [
     role: 'MANAGER',
     icon: (props: TablerIconsProps) => <IconTruck {...props} />,
   },
-  {
-    url: 'jobs',
-    name: 'Агенты',
-    role: 'MANAGER',
-    icon: (props: TablerIconsProps) => <IconRobot {...props} />,
-  },
+  // {
+  //   url: 'jobs',
+  //   name: 'Агенты',
+  //   role: 'MANAGER',
+  //   icon: (props: TablerIconsProps) => <IconRobot {...props} />,
+  // },
   {
     url: 'users',
     name: 'Персонал',
@@ -206,23 +206,27 @@ export const Root = () => {
             <Title mb="xl">Страницы</Title>
             <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
               {user && user.role == 'MANAGER' ? (
-                locations.map((location) => (
-                  <Link key={location.url} to={`/${location.url}`}>
-                    <Card shadow="sm" padding="lg" radius="md" withBorder>
-                      <Card.Section>
-                        <Center h={250}>
-                          {location.icon({ stroke: 1, size: '8rem' })}
-                        </Center>
-                      </Card.Section>
-                      <Group gap={5}>
-                        <Text fw={500} size="lg">
-                          {location.name}
-                        </Text>
-                        <IconArrowRight />
-                      </Group>
-                    </Card>
-                  </Link>
-                ))
+                locations.map((location) =>
+                  user.role == location.role ? (
+                    <Link key={location.url} to={`/${location.url}`}>
+                      <Card shadow="sm" padding="lg" radius="md" withBorder>
+                        <Card.Section>
+                          <Center h={250}>
+                            {location.icon({ stroke: 1, size: '8rem' })}
+                          </Center>
+                        </Card.Section>
+                        <Group gap={5}>
+                          <Text fw={500} size="lg">
+                            {location.name}
+                          </Text>
+                          <IconArrowRight />
+                        </Group>
+                      </Card>
+                    </Link>
+                  ) : (
+                    <Fragment key={location.url}></Fragment>
+                  )
+                )
               ) : (
                 <>
                   <Link to={`/works`}>

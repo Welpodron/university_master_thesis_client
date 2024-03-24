@@ -31,6 +31,7 @@ export const api = createApi({
     'Routing',
     'Assignments',
     'Users',
+    'Personal',
   ],
   endpoints: (builder) => ({
     // works
@@ -206,6 +207,36 @@ export const api = createApi({
       }),
       invalidatesTags: [{ type: 'Users', id: 'LIST' }],
     }),
+    updateUser: builder.mutation<TUser, Partial<TUser> & { pass?: string }>({
+      query: ({ id, ...body }) => ({
+        url: `users/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Users', id }],
+    }),
+    getPersonal: builder.query<TUser, number>({
+      query: (id: number) => `personal/${id}`,
+      providesTags: (result) => [{ type: 'Personal', id: 'LIST' }],
+    }),
+    updatePersonal: builder.mutation<
+      TUser,
+      Partial<TUser> & {
+        pass?: string;
+        passNew?: string;
+        passNewConfirm?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `personal/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Personal', id: 'LIST' },
+        { type: 'Users', id },
+      ],
+    }),
   }),
 });
 
@@ -218,7 +249,10 @@ export const {
   useGetRoutingQuery,
   // users
   useGetUsersQuery,
+  useGetPersonalQuery,
   useCreateUserMutation,
+  useUpdateUserMutation,
+  useUpdatePersonalMutation,
   // tasks
   useGetTasksQuery,
   useCreateTaskMutation,

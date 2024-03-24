@@ -13,7 +13,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconDownload, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { Tabler, TablerEditor } from '@/components/tabler';
-import { TUser } from '@/constants';
+import { TAssignment, TUser } from '@/constants';
 import { useGetWorksQuery } from '@/redux/services/api';
 import { exportData } from '@/utils';
 
@@ -67,7 +67,7 @@ export const Works = () => {
         name: 'Экспорт',
         color: 'blue',
         leftSection: <IconDownload size={20} />,
-        onClick: (item: TUser) => {
+        onClick: (item: TAssignment) => {
           exportData([item]);
         },
       },
