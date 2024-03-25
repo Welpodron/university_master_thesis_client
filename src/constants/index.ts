@@ -1,5 +1,3 @@
-import { LatLngExpression } from 'leaflet';
-
 export type TModelField = {
   name: string;
   kind: string;
@@ -10,6 +8,7 @@ export type TVehicle = {
   id: number;
   name: string;
   capacity: number;
+  additional: boolean;
 };
 
 export type TTask = {

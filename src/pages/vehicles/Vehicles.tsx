@@ -8,6 +8,7 @@ import {
   Text,
   TextInput,
   Title,
+  Checkbox,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconDownload, IconPencil, IconPlus, IconX } from '@tabler/icons-react';
@@ -21,6 +22,7 @@ import {
   useUpdateVehicleMutation,
 } from '@/redux/services/api';
 import { exportData } from '@/utils';
+import { notifications } from '@mantine/notifications';
 
 export const Vehicles = () => {
   const { data, isLoading: loading, error } = useGetVehiclesQuery(undefined);
@@ -32,10 +34,12 @@ export const Vehicles = () => {
   const addForm = useForm<{
     name: string;
     capacity: number | null;
+    additional: boolean;
   }>({
     initialValues: {
       name: '',
       capacity: null,
+      additional: false,
     },
   });
 
@@ -43,11 +47,13 @@ export const Vehicles = () => {
     id: number;
     name: string;
     capacity: number | null;
+    additional: boolean;
   }>({
     initialValues: {
       id: NaN,
       name: '',
       capacity: null,
+      additional: false,
     },
   });
 
@@ -58,14 +64,22 @@ export const Vehicles = () => {
     useDisclosure(false);
 
   const handleAddFormSubmit = useCallback(
-    ({ name, capacity }: { name: string; capacity: number | null }) => {
+    ({
+      name,
+      capacity,
+      additional,
+    }: {
+      name: string;
+      capacity: number | null;
+      additional: boolean;
+    }) => {
       if (!name || !capacity) {
         return;
       }
 
       (async () => {
         try {
-          await createVehicle({ name, capacity });
+          await createVehicle({ name, capacity, additional }).unwrap();
           closeAddDrawer();
           addForm.reset();
         } catch (error) {
@@ -81,10 +95,12 @@ export const Vehicles = () => {
       id,
       name,
       capacity,
+      additional,
     }: {
       id: number;
       name: string;
       capacity: number | null;
+      additional: boolean;
     }) => {
       if (!name || !capacity) {
         return;
@@ -92,7 +108,7 @@ export const Vehicles = () => {
 
       (async () => {
         try {
-          await updateVehicle({ id, name, capacity });
+          await updateVehicle({ id, name, capacity, additional }).unwrap();
           closeEditDrawer();
         } catch (error) {
           console.error(error);
@@ -106,7 +122,7 @@ export const Vehicles = () => {
     if (Array.isArray(ids)) {
       (async () => {
         try {
-          await deleteVehicles(ids);
+          await deleteVehicles(ids).unwrap();
         } catch (error) {
           console.error(error);
         }
@@ -198,11 +214,7 @@ export const Vehicles = () => {
         color: 'blue',
         leftSection: <IconPencil size={20} />,
         onClick: (item: TVehicle) => {
-          editForm.setValues({
-            id: item.id,
-            name: item.name,
-            capacity: item.capacity,
-          });
+          editForm.setValues({ ...item });
           openEditDrawer();
         },
       },
@@ -263,6 +275,10 @@ export const Vehicles = () => {
               required={true}
               {...addForm.getInputProps('capacity')}
             />
+            <Checkbox
+              label="Транспорт является дополнительным"
+              {...addForm.getInputProps('additional', { type: 'checkbox' })}
+            />
             <Text fz="xs" c="dimmed">
               <span style={{ color: 'red' }}>*</span> - поля, обязательные для
               заполнения
@@ -302,6 +318,10 @@ export const Vehicles = () => {
               min={1}
               required={true}
               {...editForm.getInputProps('capacity')}
+            />
+            <Checkbox
+              label="Транспорт является дополнительным"
+              {...editForm.getInputProps('additional', { type: 'checkbox' })}
             />
             <Text fz="xs" c="dimmed">
               <span style={{ color: 'red' }}>*</span> - поля, обязательные для

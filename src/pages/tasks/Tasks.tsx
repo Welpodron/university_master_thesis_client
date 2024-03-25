@@ -12,9 +12,11 @@ import {
   Title,
   TextInput,
   Select,
+  rem,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
+  IconCheck,
   IconDownload,
   IconListNumbers,
   IconPencil,
@@ -25,6 +27,7 @@ import { modals } from '@mantine/modals';
 import { TTask } from '@/constants';
 import { TablerEditor } from '@/components/tabler';
 import {
+  api,
   useCreateTaskMutation,
   useDeleteTasksMutation,
   useGetTasksQuery,
@@ -33,8 +36,19 @@ import {
   useUpdateTaskMutation,
 } from '@/redux/services/api';
 import { exportData } from '@/utils';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { calculateAllAssignments } from '@/redux/thunks/assignments';
+import { notifications } from '@mantine/notifications';
+import { Link, useNavigate } from 'react-router-dom';
 
 export const Tasks = () => {
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { loading: calculationInProgress } = useSelector(
+    (state: RootState) => state.assignments
+  );
+
   const { data, isLoading: loading, error } = useGetTasksQuery(undefined);
   const [createTask, { isLoading: isCreating }] = useCreateTaskMutation();
   const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
@@ -42,6 +56,8 @@ export const Tasks = () => {
 
   const { data: vehiclesData } = useGetVehiclesQuery(undefined);
   const { data: usersData } = useGetUsersQuery(undefined);
+
+  let navigate = useNavigate();
 
   const addForm = useForm<{
     coordinates: LatLngExpression | null;
@@ -206,11 +222,42 @@ export const Tasks = () => {
         color: 'blue',
         leftSection: <IconListNumbers size={20} />,
         onClick: () => {
-          console.log(1);
+          (async () => {
+            try {
+              await dispatch(calculateAllAssignments(null)).unwrap();
+
+              notifications.show({
+                color: 'teal',
+                icon: <IconCheck style={{ width: rem(20), height: rem(20) }} />,
+                title: 'Расчет успешно завершен',
+                message: (
+                  <a
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/assignments');
+                    }}
+                    href="/assignments"
+                  >
+                    Нажмите для просмотра полученных результатов
+                  </a>
+                ),
+              });
+            } catch (error) {
+              notifications.show({
+                color: 'red',
+                title: 'Ошибка при расчете:',
+                message: (error as any)?.message ?? String(error),
+              });
+            } finally {
+              dispatch(api.util.invalidateTags(['Tasks']));
+            }
+          })();
         },
+        loading: calculationInProgress,
+        disabled: calculationInProgress,
       },
     ],
-    [data]
+    [data, calculationInProgress]
   );
 
   const groupActions = useMemo(
@@ -306,7 +353,7 @@ export const Tasks = () => {
       <Title>Транспортные заявки</Title>
       <Tabler
         {...{
-          loading,
+          loading: loading || calculationInProgress || isCreating || isUpdating,
           data: (data?.data as any) ?? [],
           model: data?.model ?? {},
           tableActions,

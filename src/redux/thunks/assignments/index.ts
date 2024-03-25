@@ -1,18 +1,12 @@
 import { API } from '@/api';
-import type { TModelField, TAssignment } from '@/constants';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { AxiosError } from 'axios';
 
-export const RESTgetAssignments = createAsyncThunk(
-  'assignments/RESTgetAssignments',
+export const calculateAllAssignments = createAsyncThunk<undefined, null>(
+  'assignments/calculateAll',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await API.get<{
-        data: TAssignment[];
-        model: Record<string, TModelField>;
-      }>('/assignments');
-
-      return { data: data.data, model: data.model };
+      await API.get('/calculate');
     } catch (error) {
       if (error instanceof AxiosError) {
         return rejectWithValue({

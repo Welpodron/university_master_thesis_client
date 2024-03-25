@@ -46,7 +46,7 @@ export const Settings = () => {
     },
   });
 
-  const openConfirmAlgoModal = () =>
+  const openConfirmModal = () =>
     modals.openConfirmModal({
       title: 'Подтвердите действие',
       centered: true,
@@ -54,25 +54,7 @@ export const Settings = () => {
       withCloseButton: false,
       children: (
         <Text size="sm">
-          При изменении параметров алгоритмизации возможно существенное
-          изменение результата расчетов планирования маршрутов
-        </Text>
-      ),
-      confirmProps: { color: 'red' },
-      labels: { confirm: 'Подтвердить', cancel: 'Отмена' },
-      onConfirm: () => {},
-    });
-
-  const openConfirmRoutingModal = () =>
-    modals.openConfirmModal({
-      title: 'Подтвердите действие',
-      centered: true,
-      zIndex: 1002,
-      withCloseButton: false,
-      children: (
-        <Text size="sm">
-          При изменении параметров маршрутизации весь кэш автоматической
-          маршрутизации будет очищен!
+          Данное действие требует дополнительного подтверждения
         </Text>
       ),
       confirmProps: { color: 'red' },
@@ -126,16 +108,6 @@ export const Settings = () => {
           <Text fz="xs" c="dimmed" mt={3} mb="lg">
             Расположение депо, параметры встроенного маршрутизатора
           </Text>
-          <Alert
-            mb={'lg'}
-            variant="light"
-            color="orange"
-            title="Внимание!"
-            icon={<IconInfoCircle />}
-          >
-            При изменении параметров маршрутизации весь кэш автоматической
-            маршрутизации будет очищен!
-          </Alert>
           <Stack>
             <Text mb={-10} fw={500}>
               Расположение депо
@@ -162,7 +134,7 @@ export const Settings = () => {
               заполнения
             </Text>
             <Button
-              onClick={() => openConfirmRoutingModal()}
+              onClick={() => openConfirmModal()}
               variant="light"
               color="red"
             >
@@ -204,7 +176,7 @@ export const Settings = () => {
               заполнения
             </Text>
             <Button
-              onClick={() => openConfirmAlgoModal()}
+              onClick={() => openConfirmModal()}
               variant="light"
               color="red"
             >

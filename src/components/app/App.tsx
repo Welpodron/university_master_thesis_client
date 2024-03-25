@@ -124,90 +124,9 @@ export const App = () => {
               </BrowserRouter>
             </Verifier>
           </ModalsProvider>
+          <Notifications position="bottom-center" autoClose={false} />
         </MantineProvider>
       </DatesProvider>
     </Provider>
   );
-
-  // return (
-  //   <DatesProvider settings={{ locale: 'ru' }}>
-  //     <MantineProvider>
-  //       <ModalsProvider>
-  //         <BrowserRouter>
-  //           <Provider store={store}>
-  //             <AuthProvider>
-  //               <Routes>
-  //                 <Route
-  //                   path="/"
-  //                   element={<Root />}
-  //                   errorElement={<Errorable />}
-  //                 >
-  //                   <Route
-  //                     path="assignments"
-  //                     element={
-  //                       <Protected role="MANAGER">
-  //                         <Assignments />
-  //                       </Protected>
-  //                     }
-  //                   />
-  //                   <Route
-  //                     path="tasks"
-  //                     element={
-  //                       <Protected role="MANAGER">
-  //                         <Tasks />
-  //                       </Protected>
-  //                     }
-  //                   />
-  //                   <Route
-  //                     path="vehicles"
-  //                     element={
-  //                       <Protected role="MANAGER">
-  //                         <Vehicles />
-  //                       </Protected>
-  //                     }
-  //                   />
-  //                   <Route
-  //                     path="jobs"
-  //                     element={
-  //                       <Protected role="MANAGER">
-  //                         <Jobs />
-  //                       </Protected>
-  //                     }
-  //                   />
-  //                   <Route
-  //                     path="users"
-  //                     element={
-  //                       <Protected role="MANAGER">
-  //                         <Users />
-  //                       </Protected>
-  //                     }
-  //                   />
-  //                   <Route
-  //                     path="personal"
-  //                     element={
-  //                       <Protected>
-  //                         <Personal />
-  //                       </Protected>
-  //                     }
-  //                   />
-  //                 </Route>
-  //                 <Route path="/login" element={<Login />} />
-  //                 {/* <Route path="/login" element={<Login />} />
-  //         <Route
-  //           path="/tasks"
-  //           element={
-  //             <Protected>
-  //               <h1>Protected</h1>
-  //             </Protected>
-  //           }
-  //         /> */}
-  //               </Routes>
-  //             </AuthProvider>
-  //           </Provider>
-  //         </BrowserRouter>
-  //       </ModalsProvider>
-  //       <Notifications position="bottom-center" autoClose={false} />
-  //     </MantineProvider>
-  //   </DatesProvider>
-  // );
 };

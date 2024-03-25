@@ -1,16 +1,13 @@
-import type { TModelField, TAssignment } from '@/constants';
-import { RESTgetAssignments } from '@/redux/thunks/assignments';
+import { calculateAllAssignments } from '@/redux/thunks/assignments';
 import { SerializedError, createSlice } from '@reduxjs/toolkit';
 
 const initialState: {
-  data: TAssignment[];
-  model: Record<string, TModelField>;
   loading: boolean;
+  requestId?: string;
   error: null | SerializedError;
 } = {
-  data: [],
-  model: {},
   loading: false,
+  requestId: undefined,
   error: null,
 };
 
@@ -20,23 +17,24 @@ const slice = createSlice({
   reducers: {},
   extraReducers(builder) {
     builder
-      .addCase(RESTgetAssignments.pending, (state, action) => {
-        state.error = null;
+      .addCase(calculateAllAssignments.pending, (state, action) => {
         if (!state.loading) {
           state.loading = true;
+          state.requestId = action.meta.requestId;
+          state.error = null;
         }
       })
-      .addCase(RESTgetAssignments.fulfilled, (state, action) => {
-        if (state.loading) {
+      .addCase(calculateAllAssignments.fulfilled, (state, action) => {
+        if (state.loading && state.requestId === action.meta.requestId) {
           state.loading = false;
-          state.data = action.payload.data;
-          state.model = action.payload.model;
+          state.requestId = undefined;
         }
       })
-      .addCase(RESTgetAssignments.rejected, (state, action) => {
-        if (state.loading) {
+      .addCase(calculateAllAssignments.rejected, (state, action) => {
+        if (state.loading && state.requestId === action.meta.requestId) {
           state.loading = false;
-          state.error = action.error;
+          state.error = action.payload as SerializedError;
+          state.requestId = undefined;
         }
       });
   },

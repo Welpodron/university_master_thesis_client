@@ -6,6 +6,7 @@ import {
   Select,
   Text,
   useMantineColorScheme,
+  Badge,
 } from '@mantine/core';
 import {
   IconChevronLeftPipe,
@@ -110,9 +111,12 @@ export const TablerPagination = ({
             onChange={handlePerPageChange}
             data={['5', '10', '15', '20']}
           />
-          <Text lh={1} fz="sm">
-            Всего: {totalRecords}
-          </Text>
+          <Group>
+            <Text lh={1} fz="sm">
+              Всего:
+            </Text>
+            <Badge variant="light">{totalRecords}</Badge>
+          </Group>
         </Group>
       </Group>
     </Box>

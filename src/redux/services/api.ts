@@ -10,6 +10,36 @@ import {
 } from '@/constants';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
+import { notifications } from '@mantine/notifications';
+
+const onQueryStartedErrorToast = async (
+  args: any,
+  { queryFulfilled }: { queryFulfilled: Promise<any> }
+) => {
+  try {
+    await queryFulfilled;
+  } catch (error) {
+    const _error = error as {
+      error: { status: number | string; error: any; data: any };
+    };
+    console.dir(error);
+    if (_error != null) {
+      if (_error?.error?.status == 'FETCH_ERROR') {
+        notifications.show({
+          color: 'red',
+          title: 'Ошибка при обработке запроса',
+          message: String(_error?.error?.error),
+        });
+      } else {
+        notifications.show({
+          color: 'red',
+          title: 'Ошибка при обработке запроса',
+          message: String(_error?.error?.data),
+        });
+      }
+    }
+  }
+};
 
 export const api = createApi({
   reducerPath: 'api',
@@ -143,6 +173,9 @@ export const api = createApi({
           : [{ type: 'Tasks', id: 'LIST' }],
     }),
     // vehicles
+    getVehicle: builder.query<TVehicle, number>({
+      query: (id: number) => `vehicles/${id}`,
+    }),
     getVehicles: builder.query<
       { data: TVehicle[]; model: Record<string, TModelField> },
       undefined
@@ -173,6 +206,7 @@ export const api = createApi({
         body,
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Vehicles', id }],
+      onQueryStarted: onQueryStartedErrorToast,
     }),
     deleteVehicles: builder.mutation<number[], number[]>({
       query: (ids) => ({
@@ -186,6 +220,9 @@ export const api = createApi({
           : [{ type: 'Vehicles', id: 'LIST' }],
     }),
     // users
+    getUser: builder.query<TUser, number>({
+      query: (id: number) => `users/${id}`,
+    }),
     getUsers: builder.query<
       { data: TUser[]; model: Record<string, TModelField> },
       unknown
@@ -248,6 +285,7 @@ export const {
   // routing
   useGetRoutingQuery,
   // users
+  useGetUserQuery,
   useGetUsersQuery,
   useGetPersonalQuery,
   useCreateUserMutation,
@@ -259,6 +297,7 @@ export const {
   useDeleteTasksMutation,
   useUpdateTaskMutation,
   // vehicles
+  useGetVehicleQuery,
   useGetVehiclesQuery,
   useCreateVehicleMutation,
   useDeleteVehiclesMutation,

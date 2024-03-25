@@ -1,5 +1,10 @@
-const isISODate = (value: string) =>
-  new Date(Date.parse(value)).toISOString() === value;
+const isISODate = (value: string) => {
+  try {
+    return new Date(Date.parse(value)).toISOString() === value;
+  } catch (_) {
+    return false;
+  }
+};
 
 const complex = ({
   originalValue,
@@ -16,8 +21,8 @@ const complex = ({
     return filterValue.some((value) => value === originalValue);
   }
 
-  if (typeof originalValue === 'string' && filterValue instanceof Date) {
-    if (isISODate(originalValue)) {
+  if (typeof originalValue === 'string') {
+    if (filterValue instanceof Date && isISODate(originalValue)) {
       const date = new Date(originalValue);
       if (date.getFullYear() !== filterValue.getFullYear()) {
         return false;
@@ -28,6 +33,13 @@ const complex = ({
       if (date.getDate() !== filterValue.getDate()) {
         return false;
       }
+      return true;
+    }
+
+    if (
+      typeof filterValue === 'string' &&
+      originalValue.includes(filterValue)
+    ) {
       return true;
     }
   }

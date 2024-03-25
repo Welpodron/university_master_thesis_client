@@ -5,7 +5,7 @@ import authReducer from '../slices/auth';
 // import jobsReducer from '../slices/jobs';
 // import vehiclesReducer from '../slices/vehicles';
 // import usersReducer from '../slices/users';
-// import assignmentsReducer from '../slices/assignments';
+import assignmentsReducer from '../slices/assignments';
 // import storageReducer from '../slices/storage';
 // import { socketMiddleware } from '../middlewares/storage';
 import { api } from '../services/api';
@@ -17,7 +17,7 @@ export const store = configureStore({
     // jobs: jobsReducer,
     // vehicles: vehiclesReducer,
     // users: usersReducer,
-    // assignments: assignmentsReducer,
+    assignments: assignmentsReducer,
     [api.reducerPath]: api.reducer,
     // storage: storageReducer,
   },

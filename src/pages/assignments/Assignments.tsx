@@ -16,7 +16,7 @@ import {
   useGetUsersQuery,
   useGetVehiclesQuery,
 } from '@/redux/services/api';
-import { IconDownload, IconPlus } from '@tabler/icons-react';
+import { IconDownload, IconNotification, IconPlus } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 import { TAssignment } from '@/constants';
@@ -103,9 +103,17 @@ export const Assignments = () => {
         },
       },
       {
-        name: 'Получить маршрутный лист',
+        name: 'Скачать маршрутный лист',
         color: 'blue',
         leftSection: <IconDownload size={20} />,
+        onClick: (item: TAssignment) => {
+          // exportData([item]);
+        },
+      },
+      {
+        name: 'Уведомить сотрудника',
+        color: 'blue',
+        leftSection: <IconNotification size={20} />,
         onClick: (item: TAssignment) => {
           // exportData([item]);
         },

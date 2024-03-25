@@ -29,6 +29,7 @@ import {
   NumberInput,
   LoadingOverlay,
   Divider,
+  Loader,
 } from '@mantine/core';
 import {
   IconSettings,
@@ -52,6 +53,7 @@ import {
   Polyline,
   FeatureGroup,
 } from 'react-leaflet';
+import { User, Vehicle } from '../previews';
 
 dayjs.extend(customParserFormat);
 
@@ -233,6 +235,42 @@ const FormattedValue = memo(
       );
     }
 
+    if (column === 'userId') {
+      return (
+        <Button
+          size="xs"
+          onClick={() => {
+            modals.open({
+              size: 'xl',
+              centered: true,
+              title: 'Сотрудник',
+              children: <User userId={Number(children)} />,
+            });
+          }}
+        >
+          Показать сотрудника
+        </Button>
+      );
+    }
+
+    if (column === 'vehicleId') {
+      return (
+        <Button
+          size="xs"
+          onClick={() => {
+            modals.open({
+              size: 'xl',
+              centered: true,
+              title: 'Транспорт',
+              children: <Vehicle vehicleId={Number(children)} />,
+            });
+          }}
+        >
+          Показать транспорт
+        </Button>
+      );
+    }
+
     if (column === 'tasks') {
       return (
         <Button
@@ -308,16 +346,19 @@ export type TTablerProps<T extends Record<string, any> & { id: number }> = {
 
   tableActions: (MenuItemProps & {
     name: string;
+    loading?: boolean;
     onClick: () => void;
   })[];
 
   itemActions: (MenuItemProps & {
     name: string;
+    loading?: boolean;
     onClick: (data: T) => void;
   })[];
 
   groupActions: (MenuItemProps & {
     name: string;
+    loading?: boolean;
     onClick: (data: number[]) => void;
   })[];
 };
@@ -494,6 +535,27 @@ const _Tabler = <T extends Record<string, any> & { id: number }>({
                           );
                         }
 
+                        if (model[key].type === 'String') {
+                          return (
+                            <TextInput
+                              label={translateColumn(key)}
+                              key={key}
+                              value={value ?? ''}
+                              onChange={(event) =>
+                                setFilterForm((filter) => {
+                                  return {
+                                    ...filter,
+                                    [key]:
+                                      event.currentTarget.value.trim() == ''
+                                        ? null
+                                        : event.currentTarget.value,
+                                  };
+                                })
+                              }
+                            />
+                          );
+                        }
+
                         if (model[key].type === 'Int') {
                           return (
                             <NumberInput
@@ -619,7 +681,14 @@ const _Tabler = <T extends Record<string, any> & { id: number }>({
                       key={index}
                       onClick={action.onClick}
                       color={action.color}
-                      leftSection={action.leftSection}
+                      leftSection={
+                        action.loading ? (
+                          <Loader color={action.color} size="xs" />
+                        ) : (
+                          action.leftSection
+                        )
+                      }
+                      disabled={action.disabled}
                     >
                       {action.name}
                     </Menu.Item>
