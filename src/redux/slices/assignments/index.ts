@@ -1,14 +1,26 @@
-import { calculateAllAssignments } from '@/redux/thunks/assignments';
+import {
+  calculateAllAssignments,
+  getAssignmentDocument,
+  notifyAssignmentUser,
+} from '@/redux/thunks/assignments';
 import { SerializedError, createSlice } from '@reduxjs/toolkit';
 
 const initialState: {
+  loadingDocument: boolean;
+  errorDocument: null | SerializedError;
+  loadingNotify: boolean;
+  errorNotify: null | SerializedError;
   loading: boolean;
   requestId?: string;
   error: null | SerializedError;
 } = {
   loading: false,
+  loadingDocument: false,
+  loadingNotify: false,
   requestId: undefined,
   error: null,
+  errorDocument: null,
+  errorNotify: null,
 };
 
 const slice = createSlice({
@@ -35,6 +47,40 @@ const slice = createSlice({
           state.loading = false;
           state.error = action.payload as SerializedError;
           state.requestId = undefined;
+        }
+      })
+      .addCase(getAssignmentDocument.pending, (state) => {
+        if (!state.loadingDocument) {
+          state.loadingDocument = true;
+          state.errorDocument = null;
+        }
+      })
+      .addCase(getAssignmentDocument.fulfilled, (state) => {
+        if (state.loadingDocument) {
+          state.loadingDocument = false;
+        }
+      })
+      .addCase(getAssignmentDocument.rejected, (state, action) => {
+        if (state.loadingDocument) {
+          state.loadingDocument = false;
+          state.errorDocument = action.payload as SerializedError;
+        }
+      })
+      .addCase(notifyAssignmentUser.pending, (state) => {
+        if (!state.loadingNotify) {
+          state.loadingNotify = true;
+          state.errorNotify = null;
+        }
+      })
+      .addCase(notifyAssignmentUser.fulfilled, (state) => {
+        if (state.loadingNotify) {
+          state.loadingNotify = false;
+        }
+      })
+      .addCase(notifyAssignmentUser.rejected, (state, action) => {
+        if (state.loadingNotify) {
+          state.loadingNotify = false;
+          state.errorNotify = action.payload as SerializedError;
         }
       });
   },

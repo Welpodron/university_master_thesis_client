@@ -9,7 +9,6 @@ import {
   TVehicle,
 } from '@/constants';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '../store';
 import { notifications } from '@mantine/notifications';
 
 const onQueryStartedErrorToast = async (
@@ -88,7 +87,17 @@ export const api = createApi({
     // settings
     getSettings: builder.query<TSettings, undefined>({
       query: () => 'settings',
-      providesTags: (result) => [{ type: 'Settings', id: 'LIST' }],
+      providesTags: () => [{ type: 'Settings', id: 'LIST' }],
+      onQueryStarted: onQueryStartedErrorToast,
+    }),
+    updateSettings: builder.mutation<TSettings, Record<string, any>>({
+      query: (body) => ({
+        url: `settings`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: () => [{ type: 'Settings', id: 'LIST' }],
+      onQueryStarted: onQueryStartedErrorToast,
     }),
     // jobs
     getJobs: builder.query<
@@ -126,7 +135,7 @@ export const api = createApi({
         method: 'DELETE',
         body: { ids },
       }),
-      invalidatesTags: (result, error) =>
+      invalidatesTags: (result) =>
         result
           ? result.map((id) => ({ type: 'Jobs', id }))
           : [{ type: 'Jobs', id: 'LIST' }],
@@ -167,14 +176,14 @@ export const api = createApi({
         method: 'DELETE',
         body: { ids },
       }),
-      invalidatesTags: (result, error) =>
+      invalidatesTags: (result) =>
         result
           ? result.map((id) => ({ type: 'Tasks', id }))
           : [{ type: 'Tasks', id: 'LIST' }],
     }),
     // vehicles
     getVehicle: builder.query<TVehicle, number>({
-      query: (id: number) => `vehicles/${id}`,
+      query: (id) => `vehicles/${id}`,
     }),
     getVehicles: builder.query<
       { data: TVehicle[]; model: Record<string, TModelField> },
@@ -190,6 +199,7 @@ export const api = createApi({
               { type: 'Vehicles', id: 'LIST' },
             ]
           : [{ type: 'Vehicles', id: 'LIST' }],
+      onQueryStarted: onQueryStartedErrorToast,
     }),
     createVehicle: builder.mutation<TVehicle, Omit<TVehicle, 'id'>>({
       query: (body) => ({
@@ -198,6 +208,16 @@ export const api = createApi({
         body,
       }),
       invalidatesTags: [{ type: 'Vehicles', id: 'LIST' }],
+      onQueryStarted: onQueryStartedErrorToast,
+    }),
+    importVehicles: builder.mutation<TVehicle[], Record<string, any>>({
+      query: (body) => ({
+        url: 'vehicles_import',
+        method: 'POST',
+        body: { importedData: body },
+      }),
+      invalidatesTags: [{ type: 'Vehicles', id: 'LIST' }],
+      onQueryStarted: onQueryStartedErrorToast,
     }),
     updateVehicle: builder.mutation<TVehicle, TVehicle>({
       query: ({ id, ...body }) => ({
@@ -214,14 +234,15 @@ export const api = createApi({
         method: 'DELETE',
         body: { ids },
       }),
-      invalidatesTags: (result, error) =>
+      invalidatesTags: (result) =>
         result
           ? result.map((id) => ({ type: 'Vehicles', id }))
           : [{ type: 'Vehicles', id: 'LIST' }],
+      onQueryStarted: onQueryStartedErrorToast,
     }),
     // users
     getUser: builder.query<TUser, number>({
-      query: (id: number) => `users/${id}`,
+      query: (id) => `users/${id}`,
     }),
     getUsers: builder.query<
       { data: TUser[]; model: Record<string, TModelField> },
@@ -253,8 +274,8 @@ export const api = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: 'Users', id }],
     }),
     getPersonal: builder.query<TUser, number>({
-      query: (id: number) => `personal/${id}`,
-      providesTags: (result) => [{ type: 'Personal', id: 'LIST' }],
+      query: (id) => `personal/${id}`,
+      providesTags: () => [{ type: 'Personal', id: 'LIST' }],
     }),
     updatePersonal: builder.mutation<
       TUser,
@@ -299,6 +320,7 @@ export const {
   // vehicles
   useGetVehicleQuery,
   useGetVehiclesQuery,
+  useImportVehiclesMutation,
   useCreateVehicleMutation,
   useDeleteVehiclesMutation,
   useUpdateVehicleMutation,
@@ -309,4 +331,5 @@ export const {
   useUpdateJobMutation,
   // settings
   useGetSettingsQuery,
+  useUpdateSettingsMutation,
 } = api;

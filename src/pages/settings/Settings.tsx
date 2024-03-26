@@ -1,14 +1,15 @@
 import { MapInput } from '@/components/forms/map-input/MapInput';
-import { useGetSettingsQuery } from '@/redux/services/api';
+import {
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
+} from '@/redux/services/api';
 import { exportData } from '@/utils';
 import {
-  Alert,
   Button,
   Group,
   LoadingOverlay,
   NumberInput,
   Paper,
-  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -19,7 +20,6 @@ import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import {
   IconDownload,
-  IconInfoCircle,
   IconKey,
   IconLetterA,
   IconRoute,
@@ -29,6 +29,8 @@ import { useEffect } from 'react';
 
 export const Settings = () => {
   const { data, isLoading: loading, error } = useGetSettingsQuery(undefined);
+  const [updateSettings, { isLoading: isUpdating }] =
+    useUpdateSettingsMutation();
 
   const editForm = useForm<{
     id: number;
@@ -59,7 +61,15 @@ export const Settings = () => {
       ),
       confirmProps: { color: 'red' },
       labels: { confirm: 'Подтвердить', cancel: 'Отмена' },
-      onConfirm: () => {},
+      onConfirm: () => {
+        (async () => {
+          try {
+            await updateSettings(editForm.values).unwrap();
+          } catch (error) {
+            console.error(error);
+          }
+        })();
+      },
     });
 
   useEffect(() => {
@@ -85,8 +95,8 @@ export const Settings = () => {
             exportData(data);
           }}
           ml="auto"
-          disabled={loading}
-          loading={loading}
+          disabled={loading || isUpdating}
+          loading={loading || isUpdating}
           leftSection={<IconDownload size={18} />}
         >
           Экспорт параметров
@@ -98,7 +108,7 @@ export const Settings = () => {
         cols={{ base: 1, sm: 2 }}
       >
         <Paper pos="relative" withBorder radius="md" p="xl">
-          <LoadingOverlay visible={loading} zIndex={1001} />
+          <LoadingOverlay visible={loading || isUpdating} zIndex={1001} />
           <Group>
             <IconRoute />
             <Text fz="lg" fw={500}>
@@ -143,7 +153,7 @@ export const Settings = () => {
           </Stack>
         </Paper>
         <Paper pos="relative" withBorder radius="md" p="xl">
-          <LoadingOverlay visible={loading} zIndex={1001} />
+          <LoadingOverlay visible={loading || isUpdating} zIndex={1001} />
           <Group>
             <IconLetterA />
             <Text fz="lg" fw={500}>

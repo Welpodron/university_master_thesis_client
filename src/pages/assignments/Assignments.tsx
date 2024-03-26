@@ -16,17 +16,30 @@ import {
   useGetUsersQuery,
   useGetVehiclesQuery,
 } from '@/redux/services/api';
-import { IconDownload, IconNotification, IconPlus } from '@tabler/icons-react';
+import {
+  IconDownload,
+  IconNotification,
+  IconPlus,
+  IconPrinter,
+} from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 import { TAssignment } from '@/constants';
 import { exportData } from '@/utils';
+import { AppDispatch, RootState } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  getAssignmentDocument,
+  notifyAssignmentUser,
+} from '@/redux/thunks/assignments';
 
 export const Assignments = () => {
   const { data, isLoading: loading, error } = useGetAssignmentsQuery(undefined);
   const { data: vehiclesData } = useGetVehiclesQuery(undefined);
   const { data: usersData } = useGetUsersQuery(undefined);
   const { data: tasksData } = useGetTasksQuery(undefined);
+
+  const dispatch = useDispatch<AppDispatch>();
 
   const addForm = useForm<{
     tasksId: string[];
@@ -107,7 +120,7 @@ export const Assignments = () => {
         color: 'blue',
         leftSection: <IconDownload size={20} />,
         onClick: (item: TAssignment) => {
-          // exportData([item]);
+          dispatch(getAssignmentDocument(item.id));
         },
       },
       {
@@ -115,11 +128,11 @@ export const Assignments = () => {
         color: 'blue',
         leftSection: <IconNotification size={20} />,
         onClick: (item: TAssignment) => {
-          // exportData([item]);
+          dispatch(notifyAssignmentUser(item.id));
         },
       },
     ],
-    []
+    [dispatch]
   );
 
   return (

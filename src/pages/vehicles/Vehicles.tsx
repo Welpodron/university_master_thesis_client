@@ -14,11 +14,12 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconDownload, IconPencil, IconPlus, IconX } from '@tabler/icons-react';
 import { modals } from '@mantine/modals';
 import { TVehicle } from '@/constants';
-import { TablerEditor, Tabler } from '@/components/tabler';
+import { TablerEditor, Tabler, TablerImport } from '@/components/tabler';
 import {
   useCreateVehicleMutation,
   useDeleteVehiclesMutation,
   useGetVehiclesQuery,
+  useImportVehiclesMutation,
   useUpdateVehicleMutation,
 } from '@/redux/services/api';
 import { exportData } from '@/utils';
@@ -28,8 +29,10 @@ export const Vehicles = () => {
   const { data, isLoading: loading, error } = useGetVehiclesQuery(undefined);
   const [createVehicle, { isLoading: isCreating }] = useCreateVehicleMutation();
   const [updateVehicle, { isLoading: isUpdating }] = useUpdateVehicleMutation();
-  const [deleteVehicles, { isLoading: isDeliting }] =
+  const [deleteVehicles, { isLoading: isDeleting }] =
     useDeleteVehiclesMutation();
+  const [importVehicles, { isLoading: isImporting }] =
+    useImportVehiclesMutation();
 
   const addForm = useForm<{
     name: string;
@@ -63,6 +66,11 @@ export const Vehicles = () => {
   const [isEditDrawerOpened, { open: openEditDrawer, close: closeEditDrawer }] =
     useDisclosure(false);
 
+  const [
+    isImportDrawerOpened,
+    { open: openImportDrawer, close: closeImportDrawer },
+  ] = useDisclosure(false);
+
   const handleAddFormSubmit = useCallback(
     ({
       name,
@@ -82,6 +90,21 @@ export const Vehicles = () => {
           await createVehicle({ name, capacity, additional }).unwrap();
           closeAddDrawer();
           addForm.reset();
+        } catch (error) {
+          console.error(error);
+        }
+      })();
+    },
+    []
+  );
+
+  const handleImportFormSubmit = useCallback(
+    (value: string, reset: () => void) => {
+      (async () => {
+        try {
+          await importVehicles(JSON.parse(value)).unwrap();
+          closeImportDrawer();
+          reset();
         } catch (error) {
           console.error(error);
         }
@@ -164,6 +187,14 @@ export const Vehicles = () => {
         },
       },
       {
+        name: 'Импорт',
+        color: 'blue',
+        leftSection: <IconDownload size={20} />,
+        onClick: () => {
+          openImportDrawer();
+        },
+      },
+      {
         name: 'Экспорт',
         color: 'blue',
         leftSection: <IconDownload size={20} />,
@@ -243,13 +274,20 @@ export const Vehicles = () => {
       <Title>Транспорт</Title>
       <Tabler
         {...{
-          loading,
+          loading:
+            loading || isImporting || isCreating || isDeleting || isUpdating,
           data: (data?.data as any) ?? [],
           model: data?.model ?? {},
           tableActions,
           groupActions,
           itemActions,
         }}
+      />
+      <TablerImport
+        onSubmit={handleImportFormSubmit}
+        loading={isImporting}
+        opened={isImportDrawerOpened}
+        onClose={closeImportDrawer}
       />
       <TablerEditor
         type="add"
